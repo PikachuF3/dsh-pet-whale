@@ -1,0 +1,4 @@
+# pet-whale bundle：向组合挂 Node half（空 apply，行为全在 client）
+- insert:
+    - id: pet-whale
+      name: pet-whale

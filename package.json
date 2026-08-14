@@ -1,0 +1,44 @@
+{
+  "name": "pet-whale",
+  "version": "0.1.0",
+  "description": "桌宠小鲸鱼：随 agent 状态切换动画的 DeepSeek Harness Web 桌宠插件（官方轮廓版）",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.mjs",
+  "exports": {
+    ".": {
+      "default": "./lib/index.mjs"
+    },
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsdown --config ./tsdown.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/smoke.mjs",
+    "extract": "node scripts/extract-whale.mjs"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-api-remotes": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session-projection": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-typert-protocol": "^0.1.0-rc.6",
+    "jsdom": "^30.0.1",
+    "tsdown": "0.22.2",
+    "typescript": "^5.6.0"
+  },
+  "license": "MIT"
+}
