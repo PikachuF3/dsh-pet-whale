@@ -309,7 +309,8 @@ export function apply(ctx: Context): () => void {
     miniDrag = null
     if (miniDragging) {
       miniDragging = false
-      mini.classList.remove('dragging')
+      // mini 可能已被 removeMini 清掉（桌宠被召回），但 miniDragging 仍必须复位
+      mini?.classList.remove('dragging')
       saveMiniPos()
     }
     window.setTimeout(() => { miniSuppressClick = false }, 0)
@@ -876,6 +877,8 @@ export function apply(ctx: Context): () => void {
     // 隐藏时不再追光，也不因鼠标移动唤醒台词
     if (root.classList.contains('hidden')) return
     markActive()
+    // 躲避判定自带守卫，且不能被下面追光的 rAF 节流挡掉，所以放在 early-return 之前
+    maybeAvoid(e)
     if (pupil === null || eyeRaf !== 0) return
     eyeRaf = window.requestAnimationFrame(() => {
       eyeRaf = 0
@@ -887,8 +890,6 @@ export function apply(ctx: Context): () => void {
       pupil.style.transform = `translate(${dx}px, ${dy}px)`
     })
   }
-  maybeAvoid(e)
-}
 
   // ===== 事件绑定 =====
   pet.addEventListener('click', () => {

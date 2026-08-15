@@ -23,6 +23,18 @@ const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', 
 const { window } = dom
 window.innerWidth = 1440
 window.innerHeight = 900
+// jsdom 不实现 matchMedia，而 readTheme 会用它探测系统深色偏好。
+// 桩返回 matches:false，等价于"系统浅色"，让主题判定落到默认分支。
+window.matchMedia = (query) => ({
+  media: query,
+  matches: false,
+  onchange: null,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  addListener: () => {},
+  removeListener: () => {},
+  dispatchEvent: () => false,
+})
 
 // 官方通道契约：window.__ModuleLoader__.load 注册 factory
 let handoff = null
