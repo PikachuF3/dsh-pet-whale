@@ -6,7 +6,7 @@
 <title>桌宠小鲸鱼 · 最终定版预览</title>
 <style>
   :root {
-    --clay: #4D6BFE;        /* 陶土身体 */
+    --accent: #4D6BFE;      /* 主题蓝强调色 */
     --paper: #F7F2E6;       /* 米白肚皮/背景 */
     --ink: #2E2A24;         /* 暖墨眼睛 */
     --blush: #F0A0A0;       /* 腮红 */
@@ -65,7 +65,7 @@
     transition: all .15s ease;
   }
   .tool-btn:hover { background: #F1EBDD; }
-  .tool-btn.active { background: var(--clay); color: #FBF8F0; border-color: var(--clay); }
+  .tool-btn.active { background: var(--accent); color: #FBF8F0; border-color: var(--accent); }
 
   /* ===== 舞台 ===== */
   .stage-wrap {
@@ -375,7 +375,7 @@
     transition: all .15s ease;
   }
   .controls button:hover { background: #F1EBDD; transform: translateY(-1px); }
-  .controls button.active { background: var(--clay); color: #FBF8F0; border-color: var(--clay); }
+  .controls button.active { background: var(--accent); color: #FBF8F0; border-color: var(--accent); }
 
   /* 互动操作按钮 */
   .interact-bar {
@@ -384,7 +384,7 @@
   .interact-btn {
     border: 1px dashed rgba(46,42,36,.25);
     background: #FFFDF9;
-    color: var(--clay);
+    color: var(--accent);
     border-radius: 999px;
     padding: 5px 14px;
     font-size: 12px;
@@ -393,7 +393,7 @@
     display: flex; align-items: center; gap: 4px;
     transition: all .15s;
   }
-  .interact-btn:hover { background: #F7EFE4; border-color: var(--clay); }
+  .interact-btn:hover { background: #F7EFE4; border-color: var(--accent); }
 
   .hint { font-size: 12px; opacity: .6; text-align: center; max-width: 420px; margin: 0; line-height: 1.5; }
 
@@ -458,7 +458,7 @@
     border: 1px solid rgba(46,42,36,.18); background: #FBF8F0; color: var(--ink);
     border-radius: 999px; padding: 6px 14px; font-size: 12px; cursor: pointer;
   }
-  .mode-switch button.active { background: var(--clay); color: #FBF8F0; border-color: var(--clay); }
+  .mode-switch button.active { background: var(--accent); color: #FBF8F0; border-color: var(--accent); }
 
   /* 减少动态效果 */
   @media (prefers-reduced-motion: reduce) {

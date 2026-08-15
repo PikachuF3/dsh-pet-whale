@@ -2,13 +2,11 @@
 // 全部选择器收进 [data-dsh-whale] 作用域，不污染页面全局。
 export const WHALE_CSS = `
 [data-dsh-whale] {
-  --pw-clay: #A3502C;
-  --pw-paper: #F7F2E6;
   --pw-ink: #2E2A24;
-  --pw-blush: #D98E6A;
-  --pw-body-light: #BC6238;
-  --pw-body: #A3502C;
-  --pw-body-dark: #88431F;
+  --pw-body-light: #8FB5FF;
+  --pw-body: #4D6BFE;
+  --pw-body-dark: #3550C9;
+  --pw-blush: #F0A0A0;
   --pw-eye: #2E2A24;
   --pw-pupil: #FBF8F0;
   position: fixed;
