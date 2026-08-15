@@ -20,11 +20,12 @@ let inner = html.slice(innerStart, end).trim()
 // 身体色换成 CSS 变量（配合 src/client/palettes.ts 换肤）。
 // SVG 展示属性（fill/stop-color）不支持 var()，改成 style 属性。
 // 只动身体渐变三档 + 腮红 + 键盘/代码粒子里的身体色，肚皮/眼睛/星星不动。
+// 注意：色值要与 preview.html 当前模板一致（现在是主题蓝默认值）。
 const colorVars = [
-  ['#BC6238', '--pw-body-light'],
-  ['#A3502C', '--pw-body'],
-  ['#88431F', '--pw-body-dark'],
-  ['#D98E6A', '--pw-blush'],
+  ['#8FB5FF', '--pw-body-light'],
+  ['#4D6BFE', '--pw-body'],
+  ['#3550C9', '--pw-body-dark'],
+  ['#F0A0A0', '--pw-blush'],
 ]
 for (const [hex, varName] of colorVars) {
   inner = inner.replace(
