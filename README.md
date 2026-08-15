@@ -2,6 +2,12 @@
 
 DeepSeek Harness（DSH）Web 界面的桌宠插件：右下角一只**官方轮廓版小鲸鱼**，随 agent 状态实时切换动画。纯 DOM 实现、零 React 依赖、零运行时第三方依赖，WebAudio 合成音效无音频文件。
 
+<p align="center">
+  <img src="docs/demo.gif" alt="桌宠小鲸鱼：空闲 → 思考深潜 → 敲代码 → 完成冒泡 → 报错" width="440">
+</p>
+
+<p align="center"><sub>空闲 → 思考·深潜 → 工作·敲代码 → 完成·冒泡 → 报错，对话气泡随状态变化</sub></p>
+
 ## 在线预览
 
 无需安装，点开即玩（全部状态与交互，官方轮廓版）：
