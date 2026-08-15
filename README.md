@@ -2,9 +2,13 @@
 
 DeepSeek Harness（DSH）Web 界面的桌宠插件：右下角一只**官方轮廓版小鲸鱼**，随 agent 状态实时切换动画。纯 DOM 实现、零 React 依赖、零运行时第三方依赖，WebAudio 合成音效无音频文件。
 
-## 预览
+## 在线预览
 
-打开仓库根目录的 [preview.html](preview.html) 即可在线体验全部状态与交互（官方轮廓版）。
+无需安装，点开即玩（全部状态与交互，官方轮廓版）：
+
+👉 **<https://nzl153.github.io/pet-whale/preview.html>**
+
+仓库内的 [preview.html](preview.html) 即预览页源码，本地直接打开同样可以体验。
 
 ## 特性
 
