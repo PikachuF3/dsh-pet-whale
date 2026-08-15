@@ -25,6 +25,11 @@ export const WHALE_HTML = `<svg viewBox="-2 -1 26 19" aria-hidden="true">
             <g class="eye-group">
               <circle class="eye" cx="5.55" cy="5.7" r="1.25" style="fill:var(--pw-eye,#2E2A24)"/>
               <circle class="pupil-highlight" cx="5.92" cy="5.35" r="0.42" style="fill:var(--pw-pupil,#FBF8F0)"/>
+              <!-- 被抓/拖拽时的动漫勾勾眼（>_<） -->
+              <g class="caught-eyes" style="display:none" fill="none" stroke="var(--pw-eye,#2E2A24)" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4.7 4.2 L5.7 5.7 L4.7 7.2"/>
+                <path d="M7.9 4.2 L6.9 5.7 L7.9 7.2"/>
+              </g>
             </g>
 
             <!-- 软萌自然腮红 -->

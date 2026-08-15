@@ -18,6 +18,77 @@ export const WHALE_CSS = `
   font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
+/* 隐藏模式：整只收起来，只留右下角小按钮 */
+[data-dsh-whale].hidden { display: none !important; }
+
+/* 右下角召回小按钮（挂在 body 上，独立于鲸鱼本体） */
+[data-dsh-whale-mini] {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.22);
+  background: linear-gradient(160deg, #4D6BFE, #2E3F9E);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,.28);
+  z-index: 901;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+[data-dsh-whale-mini]:hover {
+  transform: translateY(-2px) scale(1.07);
+  box-shadow: 0 10px 24px rgba(0,0,0,.36);
+}
+[data-dsh-whale-mini]:active { transform: scale(.94); }
+
+/* 小按钮随 agent 状态变色呼吸：idle 蓝 / think 深蓝 / working 橙 / celebrate 绿 / error 红 */
+[data-dsh-whale-mini] { animation: pw-mini-breathe 3.2s ease-in-out infinite; }
+[data-dsh-whale-mini][data-state="think"] { background: linear-gradient(160deg, #6E8BFF, #3D55D6); animation: pw-mini-think 1.6s ease-in-out infinite; }
+[data-dsh-whale-mini][data-state="working"] { background: linear-gradient(160deg, #F5A623, #C97B0B); animation: pw-mini-work 0.8s ease-in-out infinite; }
+[data-dsh-whale-mini][data-state="celebrate"] { background: linear-gradient(160deg, #3BC46D, #1E8A4A); animation: pw-mini-celebrate 0.9s ease-in-out infinite; }
+[data-dsh-whale-mini][data-state="error"] { background: linear-gradient(160deg, #E5484D, #A61B20); animation: pw-mini-error 0.5s ease-in-out infinite; }
+[data-dsh-whale-mini].dragging { cursor: move; animation: none !important; transition: none; }
+
+/* 思考内容滚动条：think 时悬在桌宠正上方，内容向左缓慢滚动 */
+[data-dsh-whale-think] {
+  position: fixed;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -100%);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  max-width: 360px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(30, 34, 46, .82);
+  color: #CFE0FF;
+  font: 12px/1.4 ui-monospace, Consolas, "Courier New", monospace;
+  border: 1px solid rgba(139,160,255,.25);
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  pointer-events: none;
+  z-index: 899;
+  white-space: nowrap;
+  overflow: hidden;
+}
+[data-dsh-whale-think].show { display: flex; }
+[data-dsh-whale-think] .dsh-whale-think-label { flex: none; opacity: .85; }
+[data-dsh-whale-think] .dsh-whale-think-scroll { flex: 1; overflow: hidden; }
+[data-dsh-whale-think] .dsh-whale-think-text {
+  display: inline-block;
+  will-change: transform;
+  max-width: none;
+}
+
 [data-dsh-whale] .pet-official {
   width: 137px;
   height: 101px;
@@ -136,6 +207,11 @@ export const WHALE_CSS = `
   transform: rotate(-5deg) scale(1.04, 0.96);
 }
 [data-dsh-whale].dragging .pet-official .body { animation: none !important; }
+
+/* 被抓/拖拽：动漫勾勾眼（>_<），替换正常眼睛 */
+[data-dsh-whale].dragging .eye-group .eye,
+[data-dsh-whale].dragging .eye-group .pupil-highlight { opacity: 0; }
+[data-dsh-whale].dragging .eye-group .caught-eyes { display: block !important; }
 
 /* ===== 台词气泡 ===== */
 [data-dsh-whale] .dsh-whale-dialog {
@@ -350,6 +426,45 @@ export const WHALE_CSS = `
   0%   { transform: translateY(0) rotate(0); opacity: 1; }
   80%  { transform: translateY(79px) rotate(45deg); opacity: 1; }
   100% { transform: translateY(90px) scale(0.5); opacity: 0; }
+}
+
+@keyframes pw-mini-breathe {
+  0%,100% { box-shadow: 0 8px 20px rgba(0,0,0,.28); }
+  50%     { box-shadow: 0 8px 24px rgba(77,107,254,.55); }
+}
+@keyframes pw-mini-think {
+  0%,100% { box-shadow: 0 8px 20px rgba(61,85,214,.35); }
+  50%     { box-shadow: 0 8px 26px rgba(110,139,255,.75); }
+}
+@keyframes pw-mini-work {
+  0%,100% { opacity: 1; }
+  50%     { opacity: .62; }
+}
+@keyframes pw-mini-celebrate {
+  0%,100% { box-shadow: 0 8px 20px rgba(27,138,74,.35); }
+  50%     { box-shadow: 0 10px 28px rgba(59,196,109,.85); }
+}
+@keyframes pw-mini-error {
+  0%,100% { box-shadow: 0 8px 20px rgba(166,27,32,.35); }
+  50%     { box-shadow: 0 8px 26px rgba(229,72,77,.85); }
+}
+
+/* 后台省电：页面不可见时暂停一切动画 */
+[data-dsh-whale].paused,
+[data-dsh-whale].paused * { animation-play-state: paused !important; transition: none !important; }
+[data-dsh-whale-mini].paused { animation: none !important; }
+
+/* 主题联动：DSH 暗色主题下的 UI 皮肤 */
+[data-dsh-whale][data-theme="dark"] .dsh-whale-dialog {
+  background: #2C2C2E;
+  color: #F2F2F0;
+  border-color: rgba(255,255,255,.12);
+}
+[data-dsh-whale][data-theme="dark"] .dsh-whale-dialog::after {
+  border-color: #2C2C2E transparent transparent;
+}
+[data-dsh-whale][data-theme="dark"] .dsh-whale-shadow {
+  background: radial-gradient(ellipse, rgba(0,0,0,.5), transparent 65%);
 }
 
 /* 减少动态效果：全关动画 */
