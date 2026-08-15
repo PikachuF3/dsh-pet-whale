@@ -1,5 +1,7 @@
 # pet-whale · 桌宠小鲸鱼 🐳
 
+[English](README.en.md) | 中文
+
 DeepSeek Harness（DSH）Web 界面的桌宠插件：右下角一只**官方轮廓版小鲸鱼**，随 agent 状态实时切换动画。纯 DOM 实现、零 React 依赖、零运行时第三方依赖，WebAudio 合成音效无音频文件。
 
 <p align="center">

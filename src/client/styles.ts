@@ -119,6 +119,28 @@ export const WHALE_CSS = `
   pointer-events: none;
 }
 
+/* 游动时的水流尾波光晕 */
+[data-dsh-whale] .dsh-whale-wake {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 146px;
+  height: 96px;
+  margin-left: -73px;
+  margin-top: -48px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(143, 181, 255, 0.28) 0%, rgba(77, 107, 254, 0.08) 50%, transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  filter: blur(4px);
+  z-index: 1;
+}
+[data-dsh-whale].swimming .dsh-whale-wake {
+  opacity: 1;
+  animation: pw-wakePulse 1.6s ease-in-out infinite alternate;
+}
+
 /* 泡泡（庆祝 + 点击） */
 [data-dsh-whale] .bubble {
   position: absolute;
@@ -179,14 +201,71 @@ export const WHALE_CSS = `
 [data-dsh-whale] .pet-official.think .bubble-blue.bb2 { animation-delay: 0.9s; }
 [data-dsh-whale] .pet-official.think .bubble-blue.bb3 { animation-delay: 1.8s; }
 
+  [data-dsh-whale] .pet-official.swim-dive,
+  [data-dsh-whale] .pet-official.swimming-dive { animation: pw-dive2 1.6s ease-in-out; filter: drop-shadow(0 6px 14px rgba(53, 80, 201, 0.28)); }
+  [data-dsh-whale] .pet-official.swim-dive .bubble-blue,
+  [data-dsh-whale] .pet-official.swimming-dive .bubble-blue { display: block; animation: pw-riseBlue 1.2s ease-out infinite; }
+  [data-dsh-whale] .pet-official.swimming .body { animation: pw-swimBody 0.85s ease-in-out infinite alternate; }
+
+
 [data-dsh-whale] .pet-official.working { animation: pw-swim 1.1s ease-in-out infinite; }
 [data-dsh-whale] .pet-official.working .body { animation: none; }
 [data-dsh-whale] .pet-official.working .keyboard-unit { display: block !important; }
 [data-dsh-whale] .pet-official.working .code-particle { display: block !important; }
 
+/* 思考：眼珠右上凝视 + 灵动高光微呼吸 */
+[data-dsh-whale] .pet-official.think .pupil-highlight {
+  animation: pw-pupilGaze 2s ease-in-out infinite alternate;
+}
+
+/* 报错：晕眩叉叉眼 */
 [data-dsh-whale] .pet-official.error { animation: pw-shake 0.5s ease-in-out infinite; }
 [data-dsh-whale] .pet-official.error .angry { display: block; animation: pw-angryJitter 0.5s ease-in-out infinite; }
+[data-dsh-whale] .pet-official.error .eye-group .eye,
+[data-dsh-whale] .pet-official.error .eye-group .pupil-highlight { opacity: 0 !important; }
+[data-dsh-whale] .pet-official.error .eye-group .dizzy-eyes {
+  display: inline !important;
+  transform-origin: 5.55px 5.7px;
+  animation: pw-dizzyShake 0.4s ease-in-out infinite alternate;
+}
 
+/* 休眠：安详月牙眼 */
+[data-dsh-whale].sleeping .eye-group .eye,
+[data-dsh-whale].sleeping .eye-group .pupil-highlight { opacity: 0 !important; }
+[data-dsh-whale].sleeping .eye-group .sleep-eyes { display: inline !important; }
+
+/* 开心态 */
+[data-dsh-whale] .pet-official.joy {
+  animation: pw-joyHop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+[data-dsh-whale] .pet-official.joy .eye-group .eye,
+[data-dsh-whale] .pet-official.joy .eye-group .pupil-highlight { opacity: 0 !important; }
+[data-dsh-whale] .pet-official.joy .eye-group .sleep-eyes { display: inline !important; }
+
+/* 戳晕态 */
+[data-dsh-whale] .pet-official.dizzy {
+  animation: pw-dizzyWobble 0.8s ease-in-out !important;
+}
+[data-dsh-whale] .pet-official.dizzy .eye-group .eye,
+[data-dsh-whale] .pet-official.dizzy .eye-group .pupil-highlight { opacity: 0 !important; }
+[data-dsh-whale] .pet-official.dizzy .eye-group .dizzy-eyes {
+  display: inline !important;
+  transform-origin: 5.55px 5.7px;
+  animation: pw-dizzyShake 0.35s ease-in-out infinite alternate;
+}
+
+/* 欢迎态 */
+[data-dsh-whale] .pet-official.welcome {
+  animation: pw-leap2 1.2s ease-in-out !important;
+}
+[data-dsh-whale] .pet-official.welcome .stars { display: block !important; }
+[data-dsh-whale] .pet-official.welcome .spout-group {
+  display: inline !important;
+  transform-origin: 8.6px 1.2px;
+  animation: pw-spoutSpray 1.1s cubic-bezier(0.2, 0.8, 0.35, 1);
+}
+
+/* 庆祝与喷水柱 */
 [data-dsh-whale] .pet-official.celebrate { animation: pw-leap2 1.4s ease-in-out infinite; }
 [data-dsh-whale] .pet-official.celebrate .stars { display: block; }
 [data-dsh-whale] .pet-official.celebrate .starL { animation: pw-starSpin 1.2s ease-in-out infinite; }
@@ -194,6 +273,22 @@ export const WHALE_CSS = `
 [data-dsh-whale] .pet-official.celebrate .bubble { animation: pw-rise 1.2s ease-out 0.3s infinite; }
 [data-dsh-whale] .pet-official.celebrate .bubble.b2 { animation-delay: 0.7s; }
 [data-dsh-whale] .pet-official.celebrate .bubble.b3 { animation-delay: 1.05s; }
+[data-dsh-whale] .pet-official.celebrate .spout-group,
+[data-dsh-whale] .pet-official.spouting .spout-group {
+  display: inline !important;
+  transform-origin: 8.6px 1.2px;
+  animation: pw-spoutSpray 1.3s cubic-bezier(0.2, 0.8, 0.35, 1) infinite;
+}
+
+/* 背部粼粼波光折射 */
+[data-dsh-whale] .caustic-shimmer {
+  animation: pw-causticDrift 4.2s ease-in-out infinite alternate;
+}
+
+[data-dsh-whale] .pet-official.wait { animation: pw-wait 1.2s ease-in-out infinite; }
+[data-dsh-whale] .pet-official.wait .bubble-blue { display: block; animation: pw-riseBlue 1.2s ease-out infinite; }
+[data-dsh-whale] .pet-official.disappointed { animation: pw-disappointed 2.6s ease-in-out infinite; }
+
 
 /* 双击翻滚特技 */
 [data-dsh-whale] .pet-official.rolling { animation: pw-rollTrick 0.65s cubic-bezier(0.34, 1.4, 0.64, 1) !important; }
@@ -204,14 +299,18 @@ export const WHALE_CSS = `
 /* 拖拽中：暂停状态动画 + 斜拉变形 */
 [data-dsh-whale].dragging .pet-official {
   animation: none !important;
-  transform: rotate(-5deg) scale(1.04, 0.96);
+  transform: scaleX(1) rotate(-5deg) scale(1.04, 0.96) !important;
+}
+[data-dsh-whale].dragging[data-facing="right"] .pet-official {
+  transform: scaleX(-1) rotate(5deg) scale(1.04, 0.96) !important;
 }
 [data-dsh-whale].dragging .pet-official .body { animation: none !important; }
 
 /* 被抓/拖拽：动漫勾勾眼（>_<），替换正常眼睛 */
 [data-dsh-whale].dragging .eye-group .eye,
-[data-dsh-whale].dragging .eye-group .pupil-highlight { opacity: 0; }
-[data-dsh-whale].dragging .eye-group .caught-eyes { display: block !important; }
+[data-dsh-whale].dragging .eye-group .pupil-highlight { opacity: 0 !important; }
+[data-dsh-whale].dragging .eye-group .caught-eyes { display: inline !important; }
+[data-dsh-whale].dragging .eye-group .caught-eyes path { stroke: var(--pw-eye, #2E2A24) !important; stroke-width: 0.9 !important; }
 
 /* ===== 台词气泡 ===== */
 [data-dsh-whale] .dsh-whale-dialog {
@@ -260,6 +359,8 @@ export const WHALE_CSS = `
   z-index: 15;
 }
 [data-dsh-whale] .dsh-whale-snack.drop { animation: pw-dropSnack 0.7s ease-in forwards; }
+[data-dsh-whale][data-facing="right"] .dsh-whale-snack { left: auto; right: 14px; }
+
 
 /* ===== 打瞌睡 ===== */
 [data-dsh-whale] .dsh-whale-zzz {
@@ -315,6 +416,54 @@ export const WHALE_CSS = `
   border: 1px solid rgba(255,255,255,.35);
 }
 
+  [data-dsh-whale] .dsh-whale-menu {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    min-width: 168px;
+  }
+  [data-dsh-whale] .dsh-whale-menu .pw-panel-title {
+    padding: 8px 10px 4px;
+    font-weight: 600;
+    font-size: 13px;
+    opacity: .92;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 4px;
+  }
+  [data-dsh-whale] .dsh-whale-menu .pw-panel-section {
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  [data-dsh-whale] .dsh-whale-menu .pw-panel-section:last-of-type {
+    border-bottom: none;
+  }
+  [data-dsh-whale] .dsh-whale-menu .pw-panel-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    opacity: .65;
+    padding: 6px 4px 2px;
+  }
+  [data-dsh-whale] .dsh-whale-menu .pw-palette-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    min-width: 86px;
+    margin: 2px;
+    padding: 5px 8px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    background: rgba(255,255,255,.04);
+  }
+  [data-dsh-whale] .dsh-whale-menu .pw-palette-btn:hover {
+    background: rgba(255,255,255,.12);
+  }
+  [data-dsh-whale] .dsh-whale-menu .pw-back {
+    margin-top: 4px;
+    opacity: .75;
+  }
+
+
 /* 悬停腮红加深 */
 [data-dsh-whale] .pet-official:hover .eye-group {
   filter: drop-shadow(0 0 1px rgba(217, 142, 106, 0.8));
@@ -347,9 +496,25 @@ export const WHALE_CSS = `
   50%      { transform: translateX(2.5px); }
   75%      { transform: translateX(-2px); }
 }
+@keyframes pw-wait {
+  0%, 100% { transform: translateY(0) rotate(0) scale(1, 1); }
+  30%      { transform: translateY(-4px) rotate(-2deg) scale(1.01, .99); }
+  60%      { transform: translateY(2px) rotate(2deg) scale(.99, 1.01); }
+}
+@keyframes pw-disappointed {
+  0%, 100% { transform: translateY(0) rotate(0) scale(1, 1); opacity: 1; }
+  40%      { transform: translateY(1px) rotate(-1.5deg) scale(0.99, 1.01); opacity: .88; }
+  70%      { transform: translateY(0) rotate(1deg) scale(1, 0.99); opacity: .94; }
+}
+
+
 @keyframes pw-swim {
   0%,100% { transform: translateX(-3.5px) translateY(0) rotate(-1.5deg); }
   50%     { transform: translateX(3.5px) translateY(-2px) rotate(1.5deg); }
+}
+@keyframes pw-swimBody {
+  0%   { transform: translateY(0) rotate(-1.2deg) scale(1, 1); }
+  100% { transform: translateY(-1.8px) rotate(1.2deg) scale(0.99, 1.015); }
 }
 @keyframes pw-blink {
   0%, 91%, 100% { transform: scaleY(1); }
@@ -449,6 +614,207 @@ export const WHALE_CSS = `
   50%     { box-shadow: 0 8px 26px rgba(229,72,77,.85); }
 }
 
+/* ===== 全屏独立固定粒子层 ===== */
+.pw-particle-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 898;
+  overflow: hidden;
+}
+
+/* ===== 水纹与水泡特效 ===== */
+.pw-water-ripple {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  border: 1.5px solid rgba(143, 181, 255, 0.65);
+  background: radial-gradient(ellipse at center, rgba(143, 181, 255, 0.22) 0%, rgba(77, 107, 254, 0.05) 55%, transparent 75%);
+  transform: translate(-50%, -50%) scale(0.2);
+  animation: pw-rippleFade 1s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+  z-index: 898;
+  box-shadow: 0 0 8px rgba(143, 181, 255, 0.35);
+}
+@keyframes pw-rippleFade {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.85;
+  }
+  60% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.65);
+    opacity: 0;
+  }
+}
+
+.pw-stream-bubble {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #FFFFFF 0%, rgba(180, 215, 255, 0.85) 55%, rgba(77, 107, 254, 0.45) 100%);
+  border: 0.8px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 4px rgba(143, 181, 255, 0.5), inset -1px -1px 2px rgba(53, 80, 201, 0.3);
+  animation: pw-bubbleFloat var(--pw-b-dur, 1.1s) cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+  z-index: 899;
+}
+@keyframes pw-bubbleFloat {
+  0% {
+    transform: translate(0, 0) scale(0.3);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.95;
+  }
+  80% {
+    opacity: 0.75;
+    transform: translate(var(--pw-b-dx, -10px), var(--pw-b-dy, -20px)) scale(1.05);
+  }
+  100% {
+    transform: translate(calc(var(--pw-b-dx, -10px) * 1.3), calc(var(--pw-b-dy, -20px) - 16px)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes pw-wakePulse {
+  0%   { transform: scale(0.9, 0.82) rotate(-2.5deg); opacity: 0.45; }
+  100% { transform: scale(1.18, 1.08) rotate(2.5deg); opacity: 0.85; }
+}
+
+@keyframes pw-spoutSpray {
+  0%   { transform: scale(0.2) translateY(2px); opacity: 0; }
+  25%  { transform: scale(1) translateY(0); opacity: 0.95; }
+  70%  { transform: scale(1.08) translateY(-1.5px); opacity: 0.75; }
+  100% { transform: scale(1.15) translateY(-3px); opacity: 0; }
+}
+
+@keyframes pw-pupilGaze {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(0.35px, -0.42px); }
+}
+
+@keyframes pw-dizzyShake {
+  0%   { transform: rotate(-12deg) scale(0.95); }
+  100% { transform: rotate(12deg) scale(1.05); }
+}
+
+@keyframes pw-dizzyWobble {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25%      { transform: rotate(-7deg) scale(0.96); }
+  75%      { transform: rotate(7deg) scale(0.96); }
+}
+
+@keyframes pw-joyHop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35%      { transform: translateY(-16px) scale(1.08, 0.94); }
+  65%      { transform: translateY(-4px) scale(0.96, 1.04); }
+}
+
+@keyframes pw-causticDrift {
+  0%   { transform: translate(-0.6px, 0.3px); opacity: 0.12; stroke-width: 0.9; }
+  50%  { opacity: 0.28; stroke-width: 1.25; }
+  100% { transform: translate(0.6px, -0.3px); opacity: 0.14; stroke-width: 1.0; }
+}
+
+/* 破浪跃水与着陆飞溅水滴 */
+.pw-splash-drop {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #FFFFFF 0%, rgba(180, 215, 255, 0.9) 60%, rgba(77, 107, 254, 0.5) 100%);
+  box-shadow: 0 0 3px rgba(143, 181, 255, 0.6);
+  animation: pw-splashFall var(--pw-sp-dur, 0.65s) cubic-bezier(0.25, 0.9, 0.4, 1) forwards;
+  z-index: 899;
+}
+@keyframes pw-splashFall {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.95;
+  }
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(var(--pw-sp-dx, 12px), var(--pw-sp-dy, 35px)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* 悬空拖拽滴水 */
+.pw-drag-drip {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 35% 30%, #FFFFFF 0%, rgba(160, 205, 255, 0.85) 60%, rgba(77, 107, 254, 0.4) 100%);
+  box-shadow: 0 0 3px rgba(143, 181, 255, 0.4);
+  animation: pw-dripFall 0.52s cubic-bezier(0.45, 0.05, 0.85, 0.6) forwards;
+  z-index: 897;
+}
+@keyframes pw-dripFall {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(0, 14px) scale(0.9, 1.25);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(0, 46px) scale(0.3, 0.1);
+    opacity: 0;
+  }
+}
+
+/* 庆祝彩屑粒子 */
+.pw-confetti {
+  position: absolute;
+  pointer-events: none;
+  width: var(--pw-cf-w, 7px);
+  height: var(--pw-cf-h, 10px);
+  background: var(--pw-cf-bg, #4D6BFE);
+  border-radius: var(--pw-cf-r, 2px);
+  opacity: 0.95;
+  animation: pw-confettiFall var(--pw-cf-dur, 1.1s) cubic-bezier(0.22, 0.8, 0.36, 1) forwards;
+  z-index: 899;
+}
+@keyframes pw-confettiFall {
+  0% {
+    transform: translate(0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(var(--pw-cf-dx, 35px), var(--pw-cf-dy, 100px)) rotateX(540deg) rotateY(360deg) rotateZ(270deg);
+    opacity: 0;
+  }
+}
+
+/* 陪伴统计项目 */
+[data-dsh-whale] .dsh-whale-menu .pw-stats-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.95;
+}
+[data-dsh-whale][data-theme="dark"] .dsh-whale-menu .pw-stats-item {
+  background: rgba(255, 255, 255, 0.08);
+  color: #F2F2F0;
+}
+
 /* 后台省电：页面不可见时暂停一切动画 */
 [data-dsh-whale].paused,
 [data-dsh-whale].paused * { animation-play-state: paused !important; transition: none !important; }
@@ -466,10 +832,14 @@ export const WHALE_CSS = `
 [data-dsh-whale][data-theme="dark"] .dsh-whale-shadow {
   background: radial-gradient(ellipse, rgba(0,0,0,.5), transparent 65%);
 }
+[data-dsh-whale][data-theme="dark"] .dsh-whale-wake {
+  background: radial-gradient(ellipse at center, rgba(110, 145, 255, 0.22) 0%, rgba(53, 80, 201, 0.06) 50%, transparent 72%);
+}
 
 /* 减少动态效果：全关动画 */
 @media (prefers-reduced-motion: reduce) {
   [data-dsh-whale] *,
   [data-dsh-whale] { animation: none !important; transition: none !important; }
+  .pw-water-ripple, .pw-stream-bubble, .pw-splash-drop, .pw-drag-drip, .pw-confetti { display: none !important; }
 }
 `

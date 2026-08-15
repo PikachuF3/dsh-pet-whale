@@ -6,7 +6,7 @@
 // - running 期间永不 idle：有工具 = working，无工具（文字流或模型内部推理）= think 深潜
 // - working 粘滞 WORK_STICKY_MS：最后一次工具活动后再保持一小段"敲代码"，覆盖工具之间的推理空档
 
-export type WhaleState = 'idle' | 'think' | 'working' | 'celebrate' | 'error'
+export type WhaleState = 'idle' | 'think' | 'working' | 'celebrate' | 'error' | 'wait' | 'disappointed'
 
 /** 鲸鱼需要的会话快照最小面（真实快照是其超集）。 */
 export interface WhaleSnapshot {
@@ -19,9 +19,12 @@ export interface WhaleSnapshot {
   openError: unknown | null
   /** 已完成回合数 → 结束事件 seq */
   turnEnds: ReadonlyMap<number, number>
+        /** 等待用户处理：approval / plan-review / question */
+    pending?: readonly unknown[]
 }
 
 export const ERROR_MS = 4000
+export const DISAPPOINTED_MS = 2600
 export const CELEBRATE_MS = 2500
 /** working 粘滞时长：工具调用结束后继续保持"敲代码"的时间 */
 export const WORK_STICKY_MS = 2500
@@ -46,7 +49,7 @@ export class WhaleDriver {
   private prevRunning: boolean | null = null
   private prevTurnEnds = 0
   private prevError: string | null = null
-  private transient: { state: 'celebrate' | 'error'; until: number } | null = null
+  private transient: { state: 'celebrate' | 'error' | 'disappointed'; until: number } | null = null
   private stickyUntil: number | null = null
   private current: WhaleState = 'idle'
 
@@ -56,7 +59,7 @@ export class WhaleDriver {
     this.prevTurnEnds = snap.turnEnds.size
     this.prevError = errorKey(snap)
     this.stickyUntil = null
-    this.current = deriveContinuous(snap, this.stickyUntil, 0)
+    this.current = (snap.pending?.length ?? 0) > 0 ? 'wait' : deriveContinuous(snap, this.stickyUntil, 0)
   }
 
   step(snap: WhaleSnapshot, now: number): WhaleStep {
@@ -86,13 +89,21 @@ export class WhaleDriver {
     if (snap.running && snap.runningCalls.length > 0) this.stickyUntil = now + WORK_STICKY_MS
     if (!snap.running) this.stickyUntil = null
 
-    let next: WhaleState
-    if (this.transient !== null) {
+    const waiting = (snap.pending?.length ?? 0) > 0
+      let next: WhaleState
+    if (waiting) {
+        next = 'wait'
+      } else if (this.transient !== null) {
       if (now < this.transient.until) {
         next = this.transient.state
       } else {
-        this.transient = null
-        next = deriveContinuous(snap, this.stickyUntil, now)
+                  if (this.transient.state === 'error') {
+            this.transient = { state: 'disappointed', until: now + DISAPPOINTED_MS }
+            next = 'disappointed'
+          } else {
+            this.transient = null
+            next = deriveContinuous(snap, this.stickyUntil, now)
+          }
       }
     } else {
       next = deriveContinuous(snap, this.stickyUntil, now)

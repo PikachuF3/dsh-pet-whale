@@ -20,16 +20,35 @@ export const WHALE_HTML = `<svg viewBox="-2 -1 26 19" aria-hidden="true">
             <ellipse cx="11.2" cy="12.6" rx="8" ry="3.3" fill="#F7F2E6" clip-path="url(#whaleClip)"/>
             <!-- 背部高光 -->
             <ellipse cx="9.6" cy="3.5" rx="6.8" ry="1.55" fill="#FBF8F0" opacity=".3" clip-path="url(#whaleClip)" transform="rotate(-8 9.6 3.5)"/>
+            <!-- 背部水面焦散折射波光 -->
+            <path class="caustic-shimmer" d="M4 2.8 Q9.5 1.5 15 3.8 T21.5 2" fill="none" stroke="#FFFFFF" stroke-width="1.1" stroke-linecap="round" opacity="0.18" clip-path="url(#whaleClip)"/>
 
             <!-- 纯正官方经典大眼：整组协调眨眼与闭眼，眼白绝不分离残留 -->
             <g class="eye-group">
               <circle class="eye" cx="5.55" cy="5.7" r="1.25" style="fill:var(--pw-eye,#2E2A24)"/>
               <circle class="pupil-highlight" cx="5.92" cy="5.35" r="0.42" style="fill:var(--pw-pupil,#FBF8F0)"/>
-              <!-- 被抓/拖拽时的动漫勾勾眼（>_<） -->
+              <!-- 被抓/拖拽时的动漫勾勾眼（>_< 侧面单眼紧闭） -->
               <g class="caught-eyes" style="display:none" fill="none" stroke="var(--pw-eye,#2E2A24)" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4.7 4.2 L5.7 5.7 L4.7 7.2"/>
-                <path d="M7.9 4.2 L6.9 5.7 L7.9 7.2"/>
+                <path d="M6.3 4.6 L4.8 5.7 L6.3 6.8"/>
               </g>
+              <!-- 睡着时的安详弯月眼（⌒ ⌒） -->
+              <g class="sleep-eyes" style="display:none" fill="none" stroke="var(--pw-eye,#2E2A24)" stroke-width="0.8" stroke-linecap="round">
+                <path d="M4.6 6.1 Q5.6 4.9 6.6 6.1"/>
+              </g>
+              <!-- 报错晕眩叉叉眼（×_×） -->
+              <g class="dizzy-eyes" style="display:none" fill="none" stroke="var(--pw-eye,#2E2A24)" stroke-width="0.75" stroke-linecap="round">
+                <path d="M4.7 4.8 L6.4 6.5 M6.4 4.8 L4.7 6.5"/>
+              </g>
+            </g>
+
+            <!-- 气孔微喷泉（胜利/翻滚/觉醒时喷出） -->
+            <g class="spout-group" style="display:none">
+              <path class="spout-stream" d="M8.2 1.2 Q7.0 -2.0 5.2 -3.2" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="0.38" stroke-linecap="round"/>
+              <path class="spout-stream" d="M8.6 1.1 Q8.7 -2.6 8.8 -3.8" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="0.45" stroke-linecap="round"/>
+              <path class="spout-stream" d="M9.0 1.2 Q10.2 -2.0 12.0 -3.2" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="0.38" stroke-linecap="round"/>
+              <circle class="spout-drop" cx="5.2" cy="-3.2" r="0.28" fill="#FFFFFF"/>
+              <circle class="spout-drop" cx="8.8" cy="-3.8" r="0.32" fill="#FFFFFF"/>
+              <circle class="spout-drop" cx="12.0" cy="-3.2" r="0.28" fill="#FFFFFF"/>
             </g>
 
             <!-- 软萌自然腮红 -->
@@ -39,7 +58,7 @@ export const WHALE_HTML = `<svg viewBox="-2 -1 26 19" aria-hidden="true">
             <circle cx="12.44" cy="8.26" r="0.45" fill="url(#bodyGrad)"/>
 
             <!-- 尴尬黑线 -->
-            <g class="angry" style="display:none" stroke="#2E2A24" stroke-width="0.3" stroke-linecap="round">
+            <g class="angry" style="display:none" stroke="var(--pw-eye,#2E2A24)" stroke-width="0.3" stroke-linecap="round">
               <line x1="5.7" y1="2.6" x2="5.15" y2="1.0"/>
               <line x1="7.0" y1="2.9" x2="7.0" y2="0.9"/>
               <line x1="8.3" y1="2.6" x2="8.85" y2="1.0"/>

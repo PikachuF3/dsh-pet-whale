@@ -1,0 +1,311 @@
+// pet-whale 文案字典：zh / en。
+// 接入 DSH 官方 locale 服务；preview 独立页用浏览器语言 + localStorage 覆盖。
+
+import type { WhaleState } from './state'
+
+export type PetLocale = 'zh' | 'en'
+
+export interface PetStrings {
+  status: Record<WhaleState, string[]>
+  poke: string[]
+  menu: {
+    feed: string
+    headpat: string
+    soundOn: string
+    soundOff: string
+    hide: string
+    more: string
+    copyError: string
+  }
+  panel: {
+    title: string
+    appearance: string
+    behavior: string
+    stats: string
+    statsCompleted: (n: number) => string
+    statsInteractions: (n: number) => string
+    statsErrors: (n: number) => string
+    statsDays: (n: number) => string
+    rest: string
+    pretend: string
+    thinkTicker: string
+    swim: string
+    sound: string
+    schedule: string
+    in1h: string
+    daily: string
+    cancelSchedule: string
+    hide: string
+    close: string
+    back: string
+  }
+  palette: Record<string, string>
+  feedback: {
+    squish: string
+    roll: string
+    feed: string
+    headpat: string
+    paletteApplied: (name: string) => string
+    pretendOn: string
+    pretendOff: string
+    tickerOn: string
+    tickerOff: string
+    hidden: string
+    shown: string
+    schedule1h: string
+    scheduleDaily: string
+    scheduleCancel: string
+    errorCopied: string
+    wake: string
+    sleep: string
+    avoid: string
+    swim: string[]
+    swimOn: string
+    swimOff: string
+    welcome: string
+    joy: string[]
+    pokeDizzy: string[]
+  }
+  aria: {
+    pet: string
+    mini: string
+    miniTitle: (state: string) => string
+  }
+}
+
+const zh: PetStrings = {
+  status: {
+    idle: [
+      '小鲸鱼待命中~ 点击我可以戳戳哦 🐳',
+      '今天有什么新的代码任务呢？✨',
+      '摇摇尾巴，随时准备出发！',
+    ],
+    think: ['正在深潜检索知识库... 🌊', '认真思考架构逻辑中...', '咕噜噜... 正在探索深海答案'],
+    working: ['认真敲代码中！⚡', '噼里啪啦码字中，很快就好~ ⌨️', '正在调用 Agent 工具执行任务！'],
+    celebrate: ['太棒啦！任务圆满搞定~ 🎉', '代码测试全绿，完美交付！✨', '冒泡庆祝中，请主人查收~'],
+    error: ['哎呀出错了，正在发抖求救 🥺', '捕获到一个异常，正在尝试自愈...', '呜呜呜，遇到阻碍了 >_<'],
+    wait: ['主人，这里需要你确认一下 🙋', '等你拍板呢，我先把进度停在这里~', '需要你看一眼再继续哦 ✋'],
+    disappointed: ['呜呜... 刚刚没发挥好，有点小失落 🥺', '失败是成功之母，我再缓缓~', '下次一定会更好的...'],
+  },
+  poke: [
+    '咕噜咕噜~ 戳到软软的肚皮啦！',
+    '好痒呀~ 哈哈哈 (≧▽≦)',
+    '鲸鱼活力 +10！继续加油~',
+    '小尾巴拍拍水，心情超棒 ✨',
+  ],
+  menu: {
+    feed: '🐟 投喂小鱼干',
+    headpat: '✨ 摸摸头',
+    soundOn: '🔊 音效: 开',
+    soundOff: '🔇 音效: 关',
+    hide: '🙈 隐藏到右下角',
+    more: '⚙ 更多设置…',
+    copyError: '📋 复制错误信息',
+  },
+  panel: {
+    title: '更多设置',
+    appearance: '外观',
+    behavior: '行为',
+    stats: '陪伴记录',
+    statsCompleted: (n) => `🏆 已完成回合：${n}`,
+    statsInteractions: (n) => `💬 亲密互动：${n} 次`,
+    statsErrors: (n) => `🛠 遇到异常：${n} 次`,
+    statsDays: (n) => `📅 共同陪伴：${n} 天`,
+    rest: '休息',
+    pretend: '💼 假装工作',
+    thinkTicker: '🧠 思考链',
+    swim: '🏊 游泳',
+    sound: '🔊 音效',
+    schedule: '🕐 定时隐藏',
+    in1h: '1 小时后隐藏',
+    daily: '每晚 22:00 隐藏',
+    cancelSchedule: '取消定时隐藏',
+    hide: '🙈 隐藏到右下角',
+    close: '⏹ 关闭桌宠',
+    back: '← 返回',
+  },
+  palette: {
+    terracotta: '陶土',
+    ocean: '深海蓝',
+    matcha: '抹茶绿',
+    sakura: '樱粉',
+    ink: '墨灰',
+    night: '夜黑',
+    'theme-blue': '主题蓝',
+  },
+  feedback: {
+    squish: '戳一戳，心情 +1 ✨',
+    roll: '翻个 360° 跟头给你看！(≧∇≦)ﾉ ✨',
+    feed: '嚼嚼嚼... 获得小鱼干能量！美味~ 🐟',
+    headpat: '被摸摸头啦~ 暖洋洋的超开心 🥰',
+    paletteApplied: (name) => `换上新皮肤「${name}」~ 🎨`,
+    pretendOn: '进入假装工作模式，开始表演敲代码 ⌨️💼',
+    pretendOff: '下班！恢复真实状态~',
+    tickerOn: '思考链已开启：思考时会在我头顶滚动 🧠',
+    tickerOff: '思考链已关闭~',
+    hidden: '我先藏到右下角啦，想我随时点 🐳',
+    shown: '回来啦！想我了没~ 🐳',
+    schedule1h: '好~ 1 小时后我会自己藏到右下角 🐳',
+    scheduleDaily: '记下啦：每天 22:00 自动藏到右下角 🌙',
+    scheduleCancel: '定时隐藏已取消~',
+    errorCopied: '错误信息已复制到剪贴板，快去找主人帮忙 📋',
+    wake: '醒啦！随时准备开工~ ✨',
+    sleep: '呼噜噜... 正在做深海美梦 (Zzz) 💤',
+    avoid: '让一让~ 这里交给你啦 ✨',
+    swim: [
+      '游一游，活动一下~ 🐳',
+      '换个角度看主人 ✨',
+      '咕噜噜... 巡视领地中 🌊',
+      '深潜探索一下海底世界~ 🫧',
+      '摇摇尾巴，优雅地划水中 🐋',
+    ],
+    swimOn: '游泳模式已开启，我会自己到处游啦 🐳🌊',
+    swimOff: '游泳模式已关闭，我乖乖待命~',
+    welcome: '欢迎回来，今天也一起加油吧！🐳✨',
+    joy: [
+      '嘻嘻，最喜欢主人啦~ 🥰',
+      '好开心！能量充满啦~ ✨',
+      '冒个爱心泡泡送给你 💖',
+      '摇摇尾巴，心情极佳 🐋',
+    ],
+    pokeDizzy: [
+      '哎呀，轻轻戳嘛，有点小晕乎 @-@',
+      '晕头转向了... 别戳太用力呀 🥺',
+      '晃晃脑袋，差点被戳倒啦 ~',
+    ],
+  },
+  aria: {
+    pet: '桌宠小鲸鱼',
+    mini: '显示桌宠小鲸鱼',
+    miniTitle: (state) => `桌宠小鲸鱼（${state}）· 点我召回，可拖拽移动`,
+  },
+}
+
+const en: PetStrings = {
+  status: {
+    idle: [
+      'Whale on standby~ Click me for a poke! 🐳',
+      'Any new code tasks today? ✨',
+      'Wagging my tail, ready to go!',
+    ],
+    think: ['Diving deep into the knowledge base... 🌊', 'Thinking through the architecture...', 'Blub blub... exploring the deep sea of answers'],
+    working: ['Typing code seriously! ⚡', 'Clack clack, almost done~ ⌨️', 'Calling agent tools to get things done!'],
+    celebrate: ['Yay! Task completed~ 🎉', 'All tests green, perfect delivery! ✨', 'Bubbling with joy, check it out~'],
+    error: ['Oops, something went wrong 🥺', 'Caught an exception, trying to self-heal...', 'Wahh, I hit a snag >_<'],
+    wait: ['Hey, I need your confirmation here 🙋', 'Waiting for your call—I will hold right here~', 'Please take a look before I continue ✋'],
+    disappointed: ['Aww... that did not go well, feeling a bit down 🥺', 'Failure is the mother of success, give me a moment~', 'I will do better next time...'],
+  },
+  poke: [
+    'Glub glub~ You poked my soft belly!',
+    'That tickles~ haha (≧▽≦)',
+    'Whale energy +10! Keep it up~',
+    'Splashing my tail, feeling great ✨',
+  ],
+  menu: {
+    feed: '🐟 Feed fish snack',
+    headpat: '✨ Headpat',
+    soundOn: '🔊 Sound: On',
+    soundOff: '🔇 Sound: Off',
+    hide: '🙈 Hide to corner',
+    more: '⚙ More settings…',
+    copyError: '📋 Copy error',
+  },
+  panel: {
+    title: 'More Settings',
+    appearance: 'Appearance',
+    behavior: 'Behavior',
+    stats: 'Companion Stats',
+    statsCompleted: (n) => `🏆 Completed Turns: ${n}`,
+    statsInteractions: (n) => `💬 Interactions: ${n}`,
+    statsErrors: (n) => `🛠 Errors Encountered: ${n}`,
+    statsDays: (n) => `📅 Days Together: ${n} d`,
+    rest: 'Rest',
+    pretend: '💼 Pretend to work',
+    thinkTicker: '🧠 Think ticker',
+    swim: '🏊 Swimming',
+    sound: '🔊 Sound',
+    schedule: '🕐 Auto-hide',
+    in1h: 'Hide in 1 hour',
+    daily: 'Hide every day at 22:00',
+    cancelSchedule: 'Cancel auto-hide',
+    hide: '🙈 Hide to corner',
+    close: '⏹ Close pet',
+    back: '← Back',
+  },
+  palette: {
+    terracotta: 'Terracotta',
+    ocean: 'Ocean Blue',
+    matcha: 'Matcha Green',
+    sakura: 'Sakura Pink',
+    ink: 'Ink Gray',
+    night: 'Night Black',
+    'theme-blue': 'Theme Blue',
+  },
+  feedback: {
+    squish: 'Poke! Mood +1 ✨',
+    roll: 'A 360° flip just for you! (≧∇≦)ﾉ ✨',
+    feed: 'Munch munch... fish snack energy! Yummy~ 🐟',
+    headpat: 'Headpat received~ warm and happy 🥰',
+    paletteApplied: (name) => `New skin applied: ${name}~ 🎨`,
+    pretendOn: 'Entering pretend-work mode, time to type ⌨️💼',
+    pretendOff: 'Off duty! Back to real state~',
+    tickerOn: 'Think ticker enabled: thoughts will scroll above me 🧠',
+    tickerOff: 'Think ticker disabled~',
+    hidden: 'I will hide in the corner. Call me anytime 🐳',
+    shown: 'Back again! Missed me~ 🐳',
+    schedule1h: 'Okay~ I will hide in the corner in 1 hour 🐳',
+    scheduleDaily: 'Got it: I will auto-hide at 22:00 every day 🌙',
+    scheduleCancel: 'Auto-hide cancelled~',
+    errorCopied: 'Error copied to clipboard, go ask for help 📋',
+    wake: 'Awake! Ready to work~ ✨',
+    sleep: 'Zzz... dreaming in the deep sea (Zzz) 💤',
+    avoid: 'Let me make room for you~ ✨',
+    swim: [
+      'Swimming around a bit~ 🐳',
+      'Looking at you from another angle ✨',
+      'Blub blub... patrolling my territory 🌊',
+      'Diving deep to explore the seabed~ 🫧',
+      'Wagging my tail, gliding smoothly 🐋',
+    ],
+    swimOn: 'Swimming mode on: I will roam around by myself 🐳🌊',
+    swimOff: 'Swimming mode off: I will stay put~',
+    welcome: 'Welcome back! Let\'s do our best today! 🐳✨',
+    joy: [
+      'Hehe, love you the most! 🥰',
+      'So happy! Energy fully restored~ ✨',
+      'A heart bubble just for you 💖',
+      'Wagging my tail with joy 🐋',
+    ],
+    pokeDizzy: [
+      'Woah, gentle please! Feeling a bit dizzy @-@',
+      'Spinning around... don\'t poke too hard 🥺',
+      'Shaking my head, almost fell over~',
+    ],
+  },
+  aria: {
+    pet: 'Desktop pet whale',
+    mini: 'Show desktop pet whale',
+    miniTitle: (state) => `Desktop whale (${state}) · Click to recall, draggable`,
+  },
+}
+
+export const PET_LOCALES: readonly PetLocale[] = ['zh', 'en']
+
+/** 根据浏览器语言返回支持的语言，未命中默认 zh。 */
+export function detectBrowserLocale(): PetLocale {
+  if (typeof navigator === 'undefined') return 'zh'
+  for (const tag of [...(navigator.languages ?? []), navigator.language]) {
+    const primary = String(tag ?? '').toLowerCase().split('-')[0]
+    if (primary === 'en') return 'en'
+    if (primary === 'zh') return 'zh'
+  }
+  return 'zh'
+}
+
+export function getStrings(locale: PetLocale): PetStrings {
+  return locale === 'en' ? en : zh
+}
+
+export function paletteName(locale: PetLocale, id: string, fallback: string): string {
+  return getStrings(locale).palette[id] ?? fallback
+}

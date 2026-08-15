@@ -35,6 +35,9 @@ window.matchMedia = (query) => ({
   removeListener: () => {},
   dispatchEvent: () => false,
 })
+// 让默认语言固定为中文，测试文案断言才稳定。
+Object.defineProperty(window.navigator, 'language', { value: 'zh-CN', configurable: true })
+Object.defineProperty(window.navigator, 'languages', { value: ['zh-CN'], configurable: true })
 
 // 官方通道契约：window.__ModuleLoader__.load 注册 factory
 let handoff = null
@@ -110,7 +113,7 @@ const shadow = rootEl?.querySelector(':scope > .dsh-whale-shadow')
 check('影子是容器兄弟元素（不随鲸鱼旋转）', shadow !== null)
 check('影子不在鲸鱼内部', pet?.querySelector('.dsh-whale-shadow') === null)
 
-const classesOf = () => [...(pet?.classList ?? [])].filter((c) => ['idle', 'think', 'working', 'celebrate', 'error'].includes(c)).join(',')
+const classesOf = () => [...(pet?.classList ?? [])].filter((c) => ['idle', 'think', 'working', 'celebrate', 'error', 'wait'].includes(c)).join(',')
 
 // 状态机：think（文本流，先于 working 测，避免粘滞窗口干扰）
 snap.running = true
@@ -127,6 +130,15 @@ check('回合中空档 → think', classesOf() === 'think')
 snap.runningCalls = [{ id: 't1' }]
 sessionObservable.notify()
 check('工具调用 → working', classesOf() === 'working')
+
+// 状态机：有 pending 等待用户处理 → wait
+snap.runningCalls = []
+snap.pending = [{ kind: 'approval' }]
+sessionObservable.notify()
+check('有 pending → wait', classesOf() === 'wait')
+snap.pending = []
+sessionObservable.notify()
+check('pending 清空回到底态', classesOf() === 'think' || classesOf() === 'working')
 
 // 状态机：回合正常结束 → celebrate（瞬态）
 snap.running = false
@@ -145,31 +157,67 @@ currentId = undefined
 ctx.sessions.list.notify()
 check('无会话 → idle', classesOf() === 'idle')
 
-// 交互：单击戳戳（直接派发 click）
+// 交互：单击戳戳（加权触发 squish/rolling/dizzy）
 pet.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
-check('单击加 squish 类', pet.classList.contains('squish'))
+check('单击触发加权互动类', pet.classList.contains('squish') || pet.classList.contains('rolling') || pet.classList.contains('dizzy'))
 
-// 右键菜单
+// 右键菜单：快捷菜单精简，更多设置进入分类子菜单
 pet.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
 const menu = rootEl.querySelector('.dsh-whale-menu')
 check('右键打开菜单', menu?.classList.contains('open') === true)
-const soundBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('音效'))
+const quickButtons = [...(menu?.querySelectorAll('button') ?? [])]
+check('快捷菜单不超过 6 项', quickButtons.length <= 6)
+const soundBtn = quickButtons.find((b) => b.textContent.includes('音效'))
+check('快捷菜单有音效开关', soundBtn !== undefined)
+const pretendBtn = quickButtons.find((b) => b.textContent.includes('假装工作'))
+check('快捷菜单有假装工作', pretendBtn !== undefined)
 soundBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+// 音效切换会关闭并重建快捷菜单，重新打开验证文案变化
+pet.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
 const soundBtn2 = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('音效'))
-check('音效开关切换文案', soundBtn2?.textContent !== soundBtn?.textContent)
+check('音效开关切换文案', soundBtn2 !== undefined && soundBtn2.textContent !== soundBtn?.textContent)
 
-// 换颜色：默认主题蓝 → 切夜黑（眼睛应反白）
+// 换颜色：默认主题蓝 → 更多设置 → 外观 → 夜黑（眼睛应反白）
 check('默认皮肤变量（主题蓝）', rootEl?.style.getPropertyValue('--pw-body') === '#4D6BFE')
 check('默认眼睛变量（暖墨）', rootEl?.style.getPropertyValue('--pw-eye') === '#2E2A24')
 pet.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
-const paletteEntry = [...menu.querySelectorAll('button')].find((b) => b.textContent.includes('换颜色'))
-paletteEntry?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
-const nightBtn = [...menu.querySelectorAll('button')].find((b) => b.textContent.includes('夜黑'))
-check('色板列出夜黑', nightBtn !== undefined)
+const moreBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('更多设置'))
+check('快捷菜单有更多设置', moreBtn !== undefined)
+moreBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+check('更多菜单保持打开', menu?.classList.contains('open') === true)
+const appearanceBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('外观'))
+check('更多菜单有外观分类', appearanceBtn !== undefined)
+const statsBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('陪伴记录'))
+check('更多菜单有陪伴记录分类', statsBtn !== undefined)
+
+// 验证陪伴记录子菜单
+statsBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+const statsItems = [...(menu?.querySelectorAll('.pw-stats-item') ?? [])]
+check('陪伴记录展示项存在', statsItems.length >= 4)
+
+// 返回更多菜单并进外观
+const backBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('返回'))
+backBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+const appearanceBtn2 = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('外观'))
+appearanceBtn2?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+check('外观菜单保持打开', menu?.classList.contains('open') === true)
+const nightBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('夜黑'))
+check('外观菜单列出夜黑', nightBtn !== undefined)
 nightBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
 check('切夜黑后身体变量', rootEl?.style.getPropertyValue('--pw-body') === '#262626')
 check('切夜黑后眼睛反白', rootEl?.style.getPropertyValue('--pw-eye') === '#F7F2E6')
 check('皮肤持久化', window.localStorage.getItem('pet-whale:palette') === 'night')
+
+// 行为子菜单：不应再出现“假装工作”，应包含“游泳”
+pet.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
+const moreBtn2 = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('更多设置'))
+moreBtn2?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+const behaviorBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('行为'))
+check('更多菜单有行为分类', behaviorBtn !== undefined)
+behaviorBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+const behaviorButtons = [...(menu?.querySelectorAll('button') ?? [])]
+check('行为菜单不含假装工作', behaviorButtons.every((b) => !b.textContent.includes('假装工作')))
+check('行为菜单含游泳', behaviorButtons.some((b) => b.textContent.includes('游泳')))
 
 // dispose
 dispose()

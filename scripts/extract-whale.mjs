@@ -34,9 +34,10 @@ for (const [hex, varName] of colorVars) {
   )
 }
 
-// 眼睛：用半径精确锚定（避免误伤键盘/黑线等处的同色），深色皮肤可反白
+// 眼睛与墨色描边：深色皮肤可反白
 inner = inner.replace('r="1.25" fill="#2E2A24"', 'r="1.25" style="fill:var(--pw-eye,#2E2A24)"')
 inner = inner.replace('r="0.42" fill="#FBF8F0"', 'r="0.42" style="fill:var(--pw-pupil,#FBF8F0)"')
+inner = inner.replace(/stroke="#2E2A24"/g, 'stroke="var(--pw-eye,#2E2A24)"')
 
 // 模板字符串安全：内容里不允许有反引号或 ${（当前 SVG 都没有，出现就报错停下）
 if (inner.includes('`') || inner.includes('${')) {

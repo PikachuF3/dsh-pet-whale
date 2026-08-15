@@ -7,15 +7,18 @@ import { WHALE_CSS } from './styles'
 import { WhaleSounds } from './sounds'
 import { WhaleDriver, type WhaleSnapshot, type WhaleState } from './state'
 import { PALETTES, applyPalette, loadPaletteId, paletteOf, savePaletteId } from './palettes'
+import { detectBrowserLocale, getStrings, paletteName, type PetLocale, type PetStrings } from './i18n'
+import { WhaleSwimmer } from './swim'
 
-// 官方 client 通道的服务闸：等 sessions 服务就绪后再 apply
-export const inject = ['sessions']
+// 官方 client 通道的服务闸：等 sessions 和 locale 服务就绪后再 apply
+export const inject = ['sessions', 'locale']
 
-const STATES: readonly WhaleState[] = ['idle', 'think', 'working', 'celebrate', 'error']
+const STATES: readonly WhaleState[] = ['idle', 'think', 'working', 'celebrate', 'error', 'wait', 'disappointed']
 const POS_KEY = 'pet-whale:pos'
 /** 隐藏状态：'1' 表示隐藏到右下角小按钮 */
 const HIDDEN_KEY = 'pet-whale:hidden'
 const PRETEND_KEY = 'pet-whale:pretend'
+const SWIM_KEY = 'pet-whale:swim'
 const THINK_TICKER_KEY = 'pet-whale:think-ticker'
 const MINI_POS_KEY = 'pet-whale:mini-pos'
 const AUTO_HIDE_KEY = 'pet-whale:auto-hide'
@@ -31,26 +34,13 @@ const DIALOG_MS = 2600
 /** 自动音效最小间隔（防 think/working 抖动连响） */
 const SOUND_GAP_MS = 1200
 
-const statusDialogs: Record<WhaleState, string[]> = {
-  idle: [
-    '小鲸鱼待命中~ 点击我可以戳戳哦 🐳',
-    '今天有什么新的代码任务呢？✨',
-    '摇摇尾巴，随时准备出发！',
-  ],
-  think: ['正在深潜检索知识库... 🌊', '认真思考架构逻辑中...', '咕噜噜... 正在探索深海答案'],
-  working: ['认真敲代码中！⚡', '噼里啪啦码字中，很快就好~ ⌨️', '正在调用 Agent 工具执行任务！'],
-  celebrate: ['太棒啦！任务圆满搞定~ 🎉', '代码测试全绿，完美交付！✨', '冒泡庆祝中，请主人查收~'],
-  error: ['哎呀出错了，正在发抖求救 🥺', '捕获到一个异常，正在尝试自愈...', '呜呜呜，遇到阻碍了 >_<'],
-}
-
-const pokeDialogs = [
-  '咕噜咕噜~ 戳到软软的肚皮啦！',
-  '好痒呀~ 哈哈哈 (≧▽≦)',
-  '鲸鱼活力 +10！继续加油~',
-  '小尾巴拍拍水，心情超棒 ✨',
-]
-
 const pick = (list: string[]): string => list[Math.floor(Math.random() * list.length)]
+
+/** DSH locale 服务的最小接口（不引入额外依赖）。 */
+interface LocaleLike {
+  getLocale(): { active: string }
+  subscribe(fn: () => void): () => void
+}
 
 export function apply(ctx: Context): () => void {
   if (typeof document === 'undefined') return () => {}
@@ -65,15 +55,21 @@ export function apply(ctx: Context): () => void {
   style.textContent = WHALE_CSS
   document.head.appendChild(style)
 
+
+    // ===== 语言 =====
+    const localeService = (ctx as unknown as { locale?: LocaleLike }).locale
+    let locale: PetLocale = localeService?.getLocale().active === 'en' ? 'en' : detectBrowserLocale()
+    let strings: PetStrings = getStrings(locale)
   // ===== DOM =====
   const root = document.createElement('div')
   root.setAttribute('data-dsh-whale', '')
   root.innerHTML = `
     <span class="dsh-whale-shadow"></span>
+    <span class="dsh-whale-wake"></span>
     <div class="dsh-whale-dialog"></div>
     <span class="dsh-whale-snack">🐟</span>
     <span class="dsh-whale-zzz">Zzz...</span>
-    <div class="pet-official idle" role="img" aria-label="桌宠小鲸鱼">${WHALE_HTML}</div>
+    <div class="pet-official idle" role="img" aria-label="${strings.aria.pet}">${WHALE_HTML}</div>
     <div class="dsh-whale-menu" role="menu"></div>
   `
   const dialog = root.querySelector<HTMLElement>('.dsh-whale-dialog')!
@@ -182,19 +178,6 @@ export function apply(ctx: Context): () => void {
   }
   // 最近一次错误文本：error 状态下点击鲸鱼可复制
   let lastErrorText = ''
-  const setState = (next: WhaleState, changed: boolean) => {
-    const effective: WhaleState = pretendOn ? 'working' : next
-    if (effective !== 'idle') wake()
-    for (const s of STATES) pet.classList.toggle(s, s === effective)
-    visualState = effective
-    syncMiniState(effective)
-    if (effective === 'idle') scheduleIdleMicro()
-    else clearIdleMicro()
-    if (changed) {
-      showDialog(pick(statusDialogs[effective]))
-      autoSound(effective)
-    }
-  }
 
   // ===== 泡泡 =====
   const popBubble = () => {
@@ -207,27 +190,174 @@ export function apply(ctx: Context): () => void {
     window.setTimeout(() => b.classList.remove('show'), 950)
   }
 
-  // ===== 戳戳 / 翻滚 =====
+  // ===== 游泳系统 =====
+  const swimmer = new WhaleSwimmer({
+    root,
+    pet,
+    clampPos,
+    savePos,
+    popBubble,
+    showDialog,
+    getStrings: () => strings,
+    isBusy: () =>
+      root.classList.contains(HIDDEN_CLASS) ||
+      dragging ||
+      document.hidden ||
+      menu.classList.contains('open') ||
+      sleeping ||
+      visualState !== 'idle',
+  })
+
+  // ===== 陪伴统计存储 =====
+  const STATS_KEY = 'pet-whale:stats'
+  interface CompanionStats {
+    completedRounds: number
+    errorCount: number
+    interactionCount: number
+    firstDate: string
+  }
+  const loadStats = (): CompanionStats => {
+    try {
+      const raw = localStorage.getItem(STATS_KEY)
+      if (raw !== null) {
+        const parsed = JSON.parse(raw) as Partial<CompanionStats>
+        return {
+          completedRounds: typeof parsed.completedRounds === 'number' ? parsed.completedRounds : 0,
+          errorCount: typeof parsed.errorCount === 'number' ? parsed.errorCount : 0,
+          interactionCount: typeof parsed.interactionCount === 'number' ? parsed.interactionCount : 0,
+          firstDate: typeof parsed.firstDate === 'string' ? parsed.firstDate : new Date().toISOString().slice(0, 10),
+        }
+      }
+    } catch {
+      // 忽略存储异常
+    }
+    const init: CompanionStats = {
+      completedRounds: 0,
+      errorCount: 0,
+      interactionCount: 0,
+      firstDate: new Date().toISOString().slice(0, 10),
+    }
+    try {
+      localStorage.setItem(STATS_KEY, JSON.stringify(init))
+    } catch {
+      // 忽略存储异常
+    }
+    return init
+  }
+  const saveStats = (s: CompanionStats) => {
+    try {
+      localStorage.setItem(STATS_KEY, JSON.stringify(s))
+    } catch {
+      // 忽略存储异常
+    }
+  }
+  const recordCelebrate = () => {
+    const s = loadStats()
+    s.completedRounds++
+    saveStats(s)
+  }
+  const recordError = () => {
+    const s = loadStats()
+    s.errorCount++
+    saveStats(s)
+  }
+  const recordInteraction = () => {
+    const s = loadStats()
+    s.interactionCount++
+    saveStats(s)
+  }
+  const calcDays = (s: CompanionStats): number => {
+    try {
+      const start = new Date(s.firstDate).getTime()
+      const now = Date.now()
+      if (Number.isNaN(start)) return 1
+      return Math.max(1, Math.floor((now - start) / 86400000) + 1)
+    } catch {
+      return 1
+    }
+  }
+
+  const setState = (next: WhaleState, changed: boolean) => {
+    const effective: WhaleState = pretendOn ? 'working' : next
+    if (effective !== 'idle') wake()
+    for (const s of STATES) pet.classList.toggle(s, s === effective)
+    visualState = effective
+    syncMiniState(effective)
+    swimmer.onStateChange(effective)
+    if (effective === 'idle') scheduleIdleMicro()
+    else clearIdleMicro()
+    if (changed) {
+      showDialog(pick(strings.status[effective]))
+      autoSound(effective)
+      if (effective === 'celebrate') {
+        recordCelebrate()
+        const curX = parseFloat(root.style.left) || 0
+        const curY = parseFloat(root.style.top) || 0
+        swimmer.spawnConfetti(curX + 68, curY + 35, 24)
+      } else if (effective === 'error') {
+        recordError()
+      }
+    }
+  }
+
+  // ===== 戳戳 / 翻滚 / 开心 / 戳晕 / 欢迎 =====
   const triggerSquish = () => {
     markActive()
+    recordInteraction()
     popBubble()
     sounds.play('bubble')
-    pet.classList.remove('squish')
+    pet.classList.remove('squish', 'dizzy', 'joy')
     void pet.offsetWidth
     pet.classList.add('squish')
     window.setTimeout(() => pet.classList.remove('squish'), 450)
-    showDialog(pick(pokeDialogs))
+    showDialog(pick(strings.poke))
   }
   const triggerRoll = () => {
     markActive()
+    recordInteraction()
     sounds.play('trick')
-    showDialog('翻个 360° 跟头给你看！(≧∇≦)ﾉ ✨')
-    pet.classList.remove('rolling')
+    showDialog(strings.feedback.roll)
+    pet.classList.remove('rolling', 'dizzy', 'joy')
     void pet.offsetWidth
-    pet.classList.add('rolling')
+    pet.classList.add('rolling', 'spouting')
+    const curX = parseFloat(root.style.left) || 0
+    const curY = parseFloat(root.style.top) || 0
+    swimmer.spawnSplash(curX + 68, curY + 65, 6)
+    swimmer.spawnWaterRipple(curX + 68, curY + 65, false)
     popBubble()
     window.setTimeout(() => popBubble(), 200)
-    window.setTimeout(() => pet.classList.remove('rolling'), 700)
+    window.setTimeout(() => pet.classList.remove('rolling', 'spouting'), 1100)
+  }
+  const triggerJoy = () => {
+    if (root.classList.contains(HIDDEN_CLASS)) return
+    markActive()
+    recordInteraction()
+    pet.classList.remove('joy', 'squish', 'dizzy')
+    void pet.offsetWidth
+    pet.classList.add('joy')
+    sounds.play('celebrate')
+    showDialog(pick(strings.feedback.joy))
+    popBubble()
+    window.setTimeout(() => pet.classList.remove('joy'), 1100)
+  }
+  const triggerDizzy = () => {
+    markActive()
+    recordInteraction()
+    pet.classList.remove('dizzy', 'squish', 'joy')
+    void pet.offsetWidth
+    pet.classList.add('dizzy')
+    sounds.play('bubble')
+    showDialog(pick(strings.feedback.pokeDizzy))
+    window.setTimeout(() => pet.classList.remove('dizzy'), 900)
+  }
+  const triggerWelcome = () => {
+    if (root.classList.contains(HIDDEN_CLASS) || visualState !== 'idle') return
+    pet.classList.remove('welcome')
+    void pet.offsetWidth
+    pet.classList.add('welcome')
+    showDialog(strings.feedback.welcome)
+    sounds.play('bubble')
+    window.setTimeout(() => pet.classList.remove('welcome'), 1200)
   }
 
   // ===== 隐藏 / 小按钮 / 状态指示 / 拖拽 / 定时 / 关闭 =====
@@ -239,7 +369,7 @@ export function apply(ctx: Context): () => void {
   const syncMiniState = (state: WhaleState) => {
     if (mini === null) return
     mini.dataset.state = state
-    mini.title = `桌宠小鲸鱼（${state}）· 点我召回，可拖拽移动`
+    mini.title = `${strings.aria.miniTitle(state)}`
   }
 
   // ===== 小按钮位置（右下角偏移，localStorage 记忆） =====
@@ -325,7 +455,7 @@ export function apply(ctx: Context): () => void {
     mini = document.createElement('button')
     mini.type = 'button'
     mini.setAttribute('data-dsh-whale-mini', '')
-    mini.setAttribute('aria-label', '显示桌宠小鲸鱼')
+    mini.setAttribute('aria-label', strings.aria.mini)
     mini.textContent = '🐳'
     const pos = loadMiniPos()
     mini.style.right = `${pos.right}px`
@@ -352,9 +482,11 @@ export function apply(ctx: Context): () => void {
     }
     place()
     triggerSquish()
-    showDialog('回来啦！想我了没~ 🐳')
+    showDialog(strings.feedback.shown)
+    swimmer.scheduleNext(1500)
   }
   const hideWhale = () => {
+    swimmer.stop()
     root.classList.add(HIDDEN_CLASS)
     try {
       localStorage.setItem(HIDDEN_KEY, '1')
@@ -484,133 +616,195 @@ export function apply(ctx: Context): () => void {
     pageVisible = !document.hidden
     root.classList.toggle('paused', document.hidden)
     mini?.classList.toggle('paused', document.hidden)
-    if (document.hidden) hideTicker()
+    if (document.hidden) {
+      hideTicker()
+      swimmer.stop()
+    } else if (visualState === 'idle') {
+      swimmer.scheduleNext(2000)
+    }
   }
   document.addEventListener('visibilitychange', onVisibility)
   onVisibility()
 
-  // ===== 右键菜单 =====
-  const buildMenu = (mode: 'main' | 'palette' | 'schedule' = 'main') => {
-    menu.textContent = ''
-    if (mode === 'palette') {
-      for (const p of PALETTES) {
-        const btn = document.createElement('button')
-        btn.type = 'button'
-        const dot = document.createElement('span')
-        dot.className = 'pw-swatch'
-        dot.style.background = `linear-gradient(135deg, ${p.light}, ${p.main}, ${p.dark})`
-        btn.appendChild(dot)
-        btn.appendChild(document.createTextNode(p.name))
-        btn.addEventListener('click', () => {
-          closeMenu()
-          applyPalette(root, p)
-          savePaletteId(p.id)
-          showDialog(`换上新皮肤「${p.name}」~ 🎨`)
-          sounds.play('bubble')
-        })
-        menu.appendChild(btn)
-      }
-      const back = document.createElement('button')
-      back.type = 'button'
-      back.textContent = '← 返回'
-      back.addEventListener('click', () => {
-        buildMenu('main')
-        positionMenu(lastMenuPos.x, lastMenuPos.y)
-      })
-      menu.appendChild(back)
-      return
+          // ===== 右键菜单 =====
+    let menuMode: 'main' | 'more' | 'appearance' | 'behavior' | 'stats' | 'rest' = 'main'
+    const appendMenuBtn = (label: string, onClick: () => void, cls = '') => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      if (cls) btn.className = cls
+      btn.textContent = label
+      btn.addEventListener('click', onClick)
+      menu.appendChild(btn)
+      return btn
     }
-    if (mode === 'schedule') {
-      const scheduleItems: [string, () => void][] = [
-        [
-          '🕐 1 小时后隐藏',
-          () => {
-            scheduleOnce(3600000)
-            showDialog('好~ 1 小时后我会自己藏到右下角 🐳')
-          },
-        ],
-        [
-          '🌙 每晚 22:00 隐藏',
-          () => {
-            scheduleDaily(22, 0)
-            showDialog('记下啦：每天 22:00 自动藏到右下角 🌙')
-          },
-        ],
-        [
-          '🚫 取消定时隐藏',
-          () => {
-            clearAutoHide()
-            showDialog('定时隐藏已取消~')
-          },
-        ],
-      ]
-      for (const [label, action] of scheduleItems) {
-        const btn = document.createElement('button')
-        btn.type = 'button'
-        btn.textContent = label
-        btn.addEventListener('click', () => {
-          closeMenu()
-          action()
-        })
-        menu.appendChild(btn)
-      }
-      const back = document.createElement('button')
-      back.type = 'button'
-      back.textContent = '← 返回'
-      back.addEventListener('click', () => {
-        buildMenu('main')
+    const buildMenu = (mode: 'main' | 'more' | 'appearance' | 'behavior' | 'stats' | 'rest' = 'main') => {
+      menuMode = mode
+      menu.textContent = ''
+      const openMore = () => {
+        buildMenu('more')
+        menu.classList.add('open')
         positionMenu(lastMenuPos.x, lastMenuPos.y)
-      })
-      menu.appendChild(back)
-      return
-    }
-    const items: [string, () => void][] = [
-      [
-        '🐟 投喂小鱼干',
-        () => {
-          snack.classList.remove('drop')
-          void snack.offsetWidth
-          snack.classList.add('drop')
-          sounds.play('snack')
-          showDialog('嚼嚼嚼... 获得小鱼干能量！美味~ 🐟')
-          window.setTimeout(() => {
-            triggerSquish()
-            sounds.play('celebrate')
-          }, 600)
-        },
-      ],
-      [
-        '✨ 摸摸头',
-        () => {
-          triggerSquish()
-          showDialog('被摸摸头啦~ 暖洋洋的超开心 🥰')
-        },
-      ],
-      [
-        '🎨 换颜色 ▸',
-        () => {
-          buildMenu('palette')
-          menu.classList.add('open')
-          positionMenu(lastMenuPos.x, lastMenuPos.y)
-        },
-      ],
-      [
-        pretendOn ? '💼 假装工作: 开' : '💼 假装工作: 关',
-        () => {
-          pretendOn = !pretendOn
-          try {
-            localStorage.setItem(PRETEND_KEY, pretendOn ? '1' : '0')
-          } catch {
-            // 忽略存储失败
-          }
-          updateTicker('')
-          setState(pretendOn ? 'working' : 'idle', true)
-          showDialog(pretendOn ? '进入假装工作模式，开始表演敲代码 ⌨️💼' : '下班！恢复真实状态~')
-        },
-      ],
-      [
-        tickerOn ? '🧠 思考链: 开' : '🧠 思考链: 关',
-        () => {
+      }
+      const openAppearance = () => {
+        buildMenu('appearance')
+        menu.classList.add('open')
+        positionMenu(lastMenuPos.x, lastMenuPos.y)
+      }
+      const openBehavior = () => {
+        buildMenu('behavior')
+        menu.classList.add('open')
+        positionMenu(lastMenuPos.x, lastMenuPos.y)
+      }
+      const openStats = () => {
+        buildMenu('stats')
+        menu.classList.add('open')
+        positionMenu(lastMenuPos.x, lastMenuPos.y)
+      }
+      const openRest = () => {
+        buildMenu('rest')
+        menu.classList.add('open')
+        positionMenu(lastMenuPos.x, lastMenuPos.y)
+      }
+      const backMain = () => {
+        buildMenu('main')
+        menu.classList.add('open')
+        positionMenu(lastMenuPos.x, lastMenuPos.y)
+      }
+      const backMore = () => {
+        buildMenu('more')
+        menu.classList.add('open')
+        positionMenu(lastMenuPos.x, lastMenuPos.y)
+      }
+
+      if (mode === 'main') {
+        const items: [string, () => void][] = [
+          [
+            strings.menu.feed,
+            () => {
+              snack.classList.remove('drop')
+              void snack.offsetWidth
+              snack.classList.add('drop')
+              sounds.play('snack')
+              showDialog(strings.feedback.feed)
+              window.setTimeout(() => {
+                triggerJoy()
+              }, 600)
+            },
+          ],
+          [
+            strings.menu.headpat,
+            () => {
+              triggerJoy()
+            },
+          ],
+          [
+            `${strings.panel.pretend}${pretendOn ? ' ✓' : ''}`,
+            () => {
+              pretendOn = !pretendOn
+              try {
+                localStorage.setItem(PRETEND_KEY, pretendOn ? '1' : '0')
+              } catch {
+                // 忽略存储失败
+              }
+              updateTicker('')
+              setState(pretendOn ? 'working' : 'idle', true)
+              showDialog(pretendOn ? strings.feedback.pretendOn : strings.feedback.pretendOff)
+            },
+          ],
+          [
+            sounds.isMuted ? strings.menu.soundOff : strings.menu.soundOn,
+            () => {
+              const next = !sounds.isMuted
+              sounds.setMuted(next)
+              buildMenu('main')
+              menu.classList.add('open')
+              positionMenu(lastMenuPos.x, lastMenuPos.y)
+              if (next) sounds.play('bubble')
+            },
+          ],
+          [
+            strings.menu.hide,
+            () => {
+              hideWhale()
+            },
+          ],
+          ...(lastErrorText !== ''
+            ? [[strings.menu.copyError, () => {
+                try {
+                  void navigator.clipboard?.writeText(lastErrorText)
+                } catch {
+                  // 忽略剪贴板失败
+                }
+                showDialog(strings.feedback.errorCopied)
+              }] as [string, () => void]]
+            : []),
+          [
+            strings.menu.more,
+            openMore,
+          ],
+        ]
+        for (const [label, action] of items) {
+          appendMenuBtn(label, () => {
+            closeMenu()
+            action()
+          })
+        }
+        return
+      }
+
+      if (mode === 'more') {
+        appendMenuBtn(`🎨 ${strings.panel.appearance} ▸`, openAppearance)
+        appendMenuBtn(`🧠 ${strings.panel.behavior} ▸`, openBehavior)
+        appendMenuBtn(`📊 ${strings.panel.stats} ▸`, openStats)
+        appendMenuBtn(`🕐 ${strings.panel.rest} ▸`, openRest)
+        appendMenuBtn(strings.panel.back, backMain, 'pw-back')
+        return
+      }
+
+      if (mode === 'stats') {
+        const stats = loadStats()
+        const days = calcDays(stats)
+        const items = [
+          strings.panel.statsCompleted(stats.completedRounds),
+          strings.panel.statsInteractions(stats.interactionCount),
+          strings.panel.statsErrors(stats.errorCount),
+          strings.panel.statsDays(days),
+        ]
+        for (const it of items) {
+          const itEl = document.createElement('div')
+          itEl.className = 'pw-stats-item'
+          itEl.textContent = it
+          menu.appendChild(itEl)
+        }
+        appendMenuBtn(strings.panel.back, backMore, 'pw-back')
+        return
+      }
+
+      if (mode === 'appearance') {
+        for (const p of PALETTES) {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.className = 'pw-palette-btn'
+          const dot = document.createElement('span')
+          dot.className = 'pw-swatch'
+          dot.style.background = `linear-gradient(135deg, ${p.light}, ${p.main}, ${p.dark})`
+          btn.appendChild(dot)
+          btn.appendChild(document.createTextNode(paletteName(locale, p.id, p.name)))
+          btn.addEventListener('click', () => {
+            closeMenu()
+            applyPalette(root, p)
+            savePaletteId(p.id)
+            showDialog(strings.feedback.paletteApplied(paletteName(locale, p.id, p.name)))
+            sounds.play('bubble')
+          })
+          menu.appendChild(btn)
+        }
+        appendMenuBtn(strings.panel.back, backMore, 'pw-back')
+        return
+      }
+
+      if (mode === 'behavior') {
+                appendMenuBtn(`${strings.panel.thinkTicker}${tickerOn ? ' ✓' : ''}`, () => {
           tickerOn = !tickerOn
           try {
             localStorage.setItem(THINK_TICKER_KEY, tickerOn ? '1' : '0')
@@ -618,86 +812,83 @@ export function apply(ctx: Context): () => void {
             // 忽略存储失败
           }
           updateTicker('')
-          showDialog(tickerOn ? '思考链已开启：思考时会在我头顶滚动 🧠' : '思考链已关闭~')
-        },
-      ],
-      [
-        '🙈 隐藏到右下角',
-        () => {
-          hideWhale()
-        },
-      ],
-      [
-        '🕐 定时隐藏 ▸',
-        () => {
-          buildMenu('schedule')
+          showDialog(tickerOn ? strings.feedback.tickerOn : strings.feedback.tickerOff)
+          buildMenu('behavior')
           menu.classList.add('open')
           positionMenu(lastMenuPos.x, lastMenuPos.y)
-        },
-      ],
-      [
-        '⏹ 关闭桌宠',
-        () => {
-          quitWhale()
-        },
-      ],
-      ...(lastErrorText !== ''
-        ? [['📋 复制错误信息', () => {
-            try {
-              void navigator.clipboard?.writeText(lastErrorText)
-            } catch {
-              // 忽略剪贴板失败
-            }
-            showDialog('错误信息已复制到剪贴板 📋')
-          }] as [string, () => void]]
-        : []),
-      [
-        sounds.isMuted ? '🔇 音效: 关' : '🔊 音效: 开',
-        () => {
+        })
+        appendMenuBtn(`${strings.panel.swim}${swimmer.isEnabled ? ' ✓' : ''}`, () => {
+          const next = swimmer.toggle()
+          showDialog(next ? strings.feedback.swimOn : strings.feedback.swimOff)
+          buildMenu('behavior')
+          menu.classList.add('open')
+          positionMenu(lastMenuPos.x, lastMenuPos.y)
+        })
+appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () => {
           const next = !sounds.isMuted
           sounds.setMuted(next)
-          buildMenu()
+          buildMenu('behavior')
+          menu.classList.add('open')
+          positionMenu(lastMenuPos.x, lastMenuPos.y)
           if (next) sounds.play('bubble')
-        },
-      ],
-    ]
-    for (const [label, action] of items) {
-      const btn = document.createElement('button')
-      btn.type = 'button'
-      btn.textContent = label
-      btn.addEventListener('click', () => {
-        closeMenu()
-        action()
-      })
-      menu.appendChild(btn)
-    }
-  }
-  let lastMenuPos = { x: 0, y: 0 }
-  const positionMenu = (clientX: number, clientY: number) => {
-    const rect = root.getBoundingClientRect()
-    const menuW = menu.offsetWidth || 140
-    const menuH = menu.offsetHeight || 130
-    const x = Math.min(Math.max(0, clientX - rect.left), Math.max(0, rect.width - menuW))
-    // 下方空间不足时往上开，避免菜单项变多后超出视口底部
-    const preferUp = clientY + menuH + 8 > window.innerHeight
-    const y = preferUp ? clientY - rect.top - menuH - 10 : clientY - rect.top + 12
-    const minY = -rect.top + 8
-    const maxY = Math.max(minY, window.innerHeight - rect.top - menuH - 8)
-    menu.style.left = `${x}px`
-    menu.style.top = `${Math.min(Math.max(minY, y), maxY)}px`
-  }
-  const openMenu = (clientX: number, clientY: number) => {
-    lastMenuPos = { x: clientX, y: clientY }
-    buildMenu()
-    menu.classList.add('open')
-    positionMenu(clientX, clientY)
-  }
-  const closeMenu = () => menu.classList.remove('open')
-  const onDocPointerDown = (e: PointerEvent) => {
-    if (!menu.contains(e.target as Node)) closeMenu()
-  }
+        })
+        appendMenuBtn(strings.panel.back, backMore, 'pw-back')
+        return
+      }
 
-  // ===== 拖拽 =====
+      if (mode === 'rest') {
+        appendMenuBtn(`🕐 ${strings.panel.in1h}`, () => {
+          closeMenu()
+          scheduleOnce(3600000)
+          showDialog(strings.feedback.schedule1h)
+        })
+        appendMenuBtn(`🌙 ${strings.panel.daily}`, () => {
+          closeMenu()
+          scheduleDaily(22, 0)
+          showDialog(strings.feedback.scheduleDaily)
+        })
+        appendMenuBtn(`🚫 ${strings.panel.cancelSchedule}`, () => {
+          closeMenu()
+          clearAutoHide()
+          showDialog(strings.feedback.scheduleCancel)
+        })
+        appendMenuBtn(strings.panel.hide, () => {
+          closeMenu()
+          hideWhale()
+        })
+        appendMenuBtn(strings.panel.close, () => {
+          closeMenu()
+          quitWhale()
+        })
+        appendMenuBtn(strings.panel.back, backMore, 'pw-back')
+      }
+    }
+    let lastMenuPos = { x: 0, y: 0 }
+    const positionMenu = (clientX: number, clientY: number) => {
+      const rect = root.getBoundingClientRect()
+      const menuW = menu.offsetWidth || 140
+      const menuH = menu.offsetHeight || 130
+      const x = Math.min(Math.max(0, clientX - rect.left), Math.max(0, rect.width - menuW))
+      // 下方空间不足时往上开，避免菜单项变多后超出视口底部
+      const preferUp = clientY + menuH + 8 > window.innerHeight
+      const y = preferUp ? clientY - rect.top - menuH - 10 : clientY - rect.top + 12
+      const minY = -rect.top + 8
+      const maxY = Math.max(minY, window.innerHeight - rect.top - menuH - 8)
+      menu.style.left = `${x}px`
+      menu.style.top = `${Math.min(Math.max(minY, y), maxY)}px`
+    }
+    const openMenu = (clientX: number, clientY: number) => {
+      lastMenuPos = { x: clientX, y: clientY }
+      buildMenu('main')
+      menu.classList.add('open')
+      positionMenu(clientX, clientY)
+    }
+    const closeMenu = () => menu.classList.remove('open')
+    const onDocPointerDown = (e: PointerEvent) => {
+      if (!menu.contains(e.target as Node)) closeMenu()
+    }
+
+// ===== 拖拽 =====
   let dragging = false
   let suppressClick = false
 
@@ -731,6 +922,7 @@ export function apply(ctx: Context): () => void {
       avoidTimer = undefined
       if (root.classList.contains('hidden') || dragging || menu.classList.contains('open') || visualState !== 'idle') return
       if (performance.now() < avoidCooldownUntil) return
+      swimmer.interrupt()
       const r = pet.getBoundingClientRect()
       const insideNow = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
       if (insideNow) return
@@ -747,7 +939,7 @@ export function apply(ctx: Context): () => void {
         root.style.transition = ''
         savePos()
       }, 380)
-      showDialog('让一让~ 这里交给你啦 ✨')
+      showDialog(strings.feedback.avoid)
     }, AVOID_DWELL_MS)
   }
 
@@ -772,7 +964,7 @@ export function apply(ctx: Context): () => void {
     popBubble()
     window.setTimeout(popBubble, 260)
   }
-  const microSwim = () => {
+  const microSwim = (quiet = false) => {
     const ox = parseFloat(root.style.left) || 0
     const oy = parseFloat(root.style.top) || 0
     const target = clampPos(ox + (Math.random() * 200 - 100), oy + (Math.random() * 140 - 70))
@@ -783,7 +975,7 @@ export function apply(ctx: Context): () => void {
       root.style.transition = ''
       savePos()
     }, 1450)
-    if (Math.random() < 0.35) showDialog(pick(['游一游，活动一下~ 🐳', '换个角度看主人 ✨', '咕噜噜... 巡视领地中']))
+    if (!quiet && Math.random() < 0.35) showDialog(pick(strings.feedback.swim))
   }
   const scheduleIdleMicro = () => {
     clearIdleMicro()
@@ -792,19 +984,27 @@ export function apply(ctx: Context): () => void {
         scheduleIdleMicro()
         return
       }
-      const roll = Math.random()
-      if (roll < 0.35) microSwim()
-      else if (roll < 0.7) microLook()
-      else microBubbles()
+      if (swimmer.isEnabled) {
+        if (Math.random() < 0.5) microLook()
+        else microBubbles()
+      } else {
+        const roll = Math.random()
+        if (roll < 0.35) microSwim()
+        else if (roll < 0.7) microLook()
+        else microBubbles()
+      }
       scheduleIdleMicro()
     }, 9000 + Math.random() * 8000)
   }
 
   let dragStart: { x: number; y: number; ox: number; oy: number } | null = null
+  let longPressTimer: number | undefined
+  let longPressTriggered = false
   const onPetPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return
-    // 抓住/开始拖拽：立即停下避让动作，并冷却一段时间，想抓就能抓住
+    // 抓住/开始拖拽：立即停下避让动作与游动，并冷却一段时间，想抓就能抓住
     cancelAvoid()
+    swimmer.interrupt()
     avoidCooldownUntil = performance.now() + AVOID_COOLDOWN_MS
     markActive()
     dragStart = {
@@ -813,8 +1013,20 @@ export function apply(ctx: Context): () => void {
       ox: parseFloat(root.style.left) || 0,
       oy: parseFloat(root.style.top) || 0,
     }
+    // 严格保持抓取时的朝向，拖拽过程中不发生任何朝向突变
+    root.dataset.facing = swimmer.currentFacing
     pet.setPointerCapture(e.pointerId)
+      longPressTriggered = false
+      window.clearTimeout(longPressTimer)
+      longPressTimer = window.setTimeout(() => {
+        longPressTriggered = true
+        suppressClick = true
+        triggerSquish()
+        showDialog(strings.feedback.headpat)
+        sounds.play('bubble')
+      }, 700)
   }
+  let lastDripTime = 0
   const onPetPointerMove = (e: PointerEvent) => {
     if (dragStart === null) return
     const dx = e.clientX - dragStart.x
@@ -823,11 +1035,18 @@ export function apply(ctx: Context): () => void {
       dragging = true
       suppressClick = true
       root.classList.add('dragging')
+      window.clearTimeout(longPressTimer)
     }
     if (dragging) {
       const p = clampPos(dragStart.ox + dx, dragStart.oy + dy)
       root.style.left = `${p.x}px`
       root.style.top = `${p.y}px`
+
+      const now = performance.now()
+      if (now - lastDripTime > 380) {
+        lastDripTime = now
+        swimmer.spawnDrip(p.x + 68, p.y + 88)
+      }
     }
   }
   const endDrag = () => {
@@ -836,14 +1055,29 @@ export function apply(ctx: Context): () => void {
     if (dragging) {
       dragging = false
       root.classList.remove('dragging')
+      const px = parseFloat(root.style.left) || 0
+      const py = parseFloat(root.style.top) || 0
+      swimmer.spawnSplash(px + 68, py + 80, 4)
+      swimmer.spawnWaterRipple(px + 68, py + 80, false)
       savePos()
+      // 保持初始朝向不变
+      root.dataset.facing = swimmer.currentFacing
+      pet.style.transform = `scaleX(${swimmer.currentFacing === 'left' ? 1 : -1}) rotate(0deg)`
     }
-    window.setTimeout(() => {
-      suppressClick = false
-    }, 0)
+    window.clearTimeout(longPressTimer)
+    if (longPressTriggered) {
+      longPressTriggered = false
+      window.setTimeout(() => {
+        suppressClick = false
+      }, 300)
+    } else {
+      window.setTimeout(() => {
+        suppressClick = false
+      }, 0)
+    }
   }
 
-  // ===== 打瞌睡 =====
+// ===== 打瞌睡 =====
   let sleepTimer: number | undefined
   let sleeping = false
   const markActive = () => {
@@ -851,7 +1085,9 @@ export function apply(ctx: Context): () => void {
     if (sleeping) {
       sleeping = false
       root.classList.remove('sleeping')
-      showDialog('醒啦！随时准备开工~ ✨')
+      pet.classList.add('spouting')
+      window.setTimeout(() => pet.classList.remove('spouting'), 1400)
+      showDialog(strings.feedback.wake)
       sounds.play('bubble')
     }
     sleepTimer = window.setTimeout(() => {
@@ -861,13 +1097,15 @@ export function apply(ctx: Context): () => void {
       }
       sleeping = true
       root.classList.add('sleeping')
-      showDialog('呼噜噜... 正在做深海美梦 (Zzz) 💤')
+      showDialog(strings.feedback.sleep)
     }, SLEEP_MS)
   }
   const wake = () => {
     if (sleeping) {
       sleeping = false
       root.classList.remove('sleeping')
+      pet.classList.add('spouting')
+      window.setTimeout(() => pet.classList.remove('spouting'), 1400)
     }
   }
 
@@ -901,9 +1139,19 @@ export function apply(ctx: Context): () => void {
       } catch {
         // 忽略剪贴板失败
       }
-      showDialog('错误信息已复制到剪贴板，快去找主人帮忙 📋')
+      showDialog(strings.feedback.errorCopied)
+      return
     }
-    triggerSquish()
+
+    markActive()
+    const rand = Math.random()
+    if (rand < 0.65) {
+      triggerSquish()
+    } else if (rand < 0.85) {
+      triggerRoll()
+    } else {
+      triggerDizzy()
+    }
   })
   pet.addEventListener('dblclick', triggerRoll)
   pet.addEventListener('contextmenu', (e) => {
@@ -929,6 +1177,8 @@ export function apply(ctx: Context): () => void {
   let unsubList: (() => void) | undefined
   let unsubSession: (() => void) | undefined
   let face: SessionFace | undefined
+  let prevSessionId: string | undefined = undefined
+  let isFirstSessionSync = true
 
   const onSnapshot = () => {
     const snap = face?.getSnapshot()
@@ -951,6 +1201,12 @@ export function apply(ctx: Context): () => void {
     face = undefined
     const list = sessions.list.getSnapshot()
     const id = list.current
+    if (id !== undefined && id !== prevSessionId && !isFirstSessionSync) {
+      triggerWelcome()
+    }
+    prevSessionId = id
+    isFirstSessionSync = false
+
     if (id === undefined) {
       onSnapshot()
       return
@@ -985,7 +1241,26 @@ export function apply(ctx: Context): () => void {
   // ===== 启动定时隐藏检查 =====
   startAutoHide()
 
-  // ===== 清理 =====
+      // ===== 语言切换监听 =====
+    let localeUnsub: (() => void) | undefined
+    const applyLocale = (nextLocale: PetLocale) => {
+      if (locale === nextLocale) return
+      locale = nextLocale
+      strings = getStrings(locale)
+      pet.setAttribute('aria-label', strings.aria.pet)
+      if (mini !== null) mini.setAttribute('aria-label', strings.aria.mini)
+      syncMiniState(visualState)
+      if (menu.classList.contains('open')) {
+        buildMenu(menuMode)
+        positionMenu(lastMenuPos.x, lastMenuPos.y)
+      }
+    }
+    localeUnsub = localeService?.subscribe(() => {
+      const nextLocale: PetLocale = localeService.getLocale().active === 'en' ? 'en' : 'zh'
+      applyLocale(nextLocale)
+    })
+
+// ===== 清理 =====
   const dispose = () => {
     window.clearTimeout(sleepTimer)
     window.clearTimeout(dialogTimer)
@@ -1001,6 +1276,7 @@ export function apply(ctx: Context): () => void {
     themeObserver.disconnect()
     clearIdleMicro()
     cancelAvoid()
+    swimmer.dispose()
     if (autoHideTimer !== undefined) window.clearInterval(autoHideTimer)
     hideTicker()
     ticker.remove()
