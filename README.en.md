@@ -16,7 +16,7 @@ The repository's [preview.html](preview.html) is the same page and can be opened
 
 | Capability | Description |
 |---|---|
-| State machine | idle / think (diving) / working (swimming + typing + code particles) / celebrate (leaping + bubbles) / error (shaking + black lines); priority: error > celebrate > think > working > idle |
+| State machine | idle / think (diving) / working (swimming + typing + code particles) / celebrate (leaping + bubbles) / error (shaking + black lines) / disappointed (a brief slump after an error) / wait (waiting for your input); priority: error > celebrate > think > working > idle |
 | Turn semantics | Never idle while a turn is running: with tools = working, without tools (text or internal reasoning) = think diving; keyboard animation sticks for 2.5s during tool-heavy phases |
 | Interactions | Click to poke, double-click 360° flip, drag with >_< eyes, right-click quick menu, mouse-follow eyes, 20s idle sleep |
 | Quick menu & settings | Right-click opens a compact 5-item quick menu; "More settings" opens a grouped panel (appearance / behavior / rest) that scales as features grow |
@@ -30,6 +30,9 @@ The repository's [preview.html](preview.html) is the same page and can be opened
 | Skins | 7 built-in palettes (default Theme Blue), extensible by adding one line in `src/client/palettes.ts` |
 | Hide/recall | Hide to a small 🐳 button; state persists across refresh |
 | Scheduled hide | Hide after 1 hour or every day at 22:00 |
+| Free swimming | Toggle "Swim" to let the whale roam the page along cubic Bezier paths, with banking, adaptive flipping, depth dives, wake ripples, and splashes; it yields while the agent is busy, and the preference is persisted |
+| Localization | Full Chinese and English copy, following the DSH locale service automatically; the standalone preview page detects the browser language and can be overridden manually |
+| Stats | The settings panel keeps running counts of completions, interactions, errors, and days spent together |
 | Sound | WebAudio-synthesized sounds, can be muted |
 | Accessibility | Respects `prefers-reduced-motion` |
 
