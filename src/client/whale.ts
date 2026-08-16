@@ -35,6 +35,11 @@ export const WHALE_HTML = `<svg viewBox="-2 -1 26 19" aria-hidden="true">
               <g class="sleep-eyes" style="display:none" fill="none" stroke="var(--pw-eye,#2E2A24)" stroke-width="0.8" stroke-linecap="round">
                 <path d="M4.6 6.1 Q5.6 4.9 6.6 6.1"/>
               </g>
+              <!-- 闹脾气：不闭眼，靠一道吊眉表达怒气。眉朝鼻尖（左）压低。
+                   这么小的尺寸里闭眼画什么都糊成一团，睁眼 + 眉才读得出来。 -->
+              <g class="angry-eyes" style="display:none" fill="none" stroke="var(--pw-eye,#2E2A24)" stroke-linecap="round">
+                <path d="M4.15 4.35 L6.75 3.35" stroke-width="0.42"/>
+              </g>
               <!-- 报错晕眩叉叉眼（×_×） -->
               <g class="dizzy-eyes" style="display:none" fill="none" stroke="var(--pw-eye,#2E2A24)" stroke-width="0.75" stroke-linecap="round">
                 <path d="M4.7 4.8 L6.4 6.5 M6.4 4.8 L4.7 6.5"/>

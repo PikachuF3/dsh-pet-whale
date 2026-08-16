@@ -259,13 +259,12 @@ export const WHALE_CSS = `
   animation: pw-annoyedDodge 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
 }
 
-/* 连戳过头：闹脾气，转过身去闭眼不理人（沿用已有的 sleep-eyes 闭眼元素） */
+/* 连戳过头：闹脾气，扭头 + 吊眉怒眼 */
 [data-dsh-whale] .pet-official.sulking {
   animation: pw-sulkTurn 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) forwards !important;
 }
-[data-dsh-whale] .pet-official.sulking .eye-group .eye,
-[data-dsh-whale] .pet-official.sulking .eye-group .pupil-highlight { opacity: 0 !important; }
-[data-dsh-whale] .pet-official.sulking .eye-group .sleep-eyes { display: inline !important; }
+/* 生气不闭眼：眼睛留着瞪人，只加一道吊眉 */
+[data-dsh-whale] .pet-official.sulking .eye-group .angry-eyes { display: inline !important; }
 
 /* 欢迎态 */
 [data-dsh-whale] .pet-official.welcome {
