@@ -16,6 +16,8 @@ export interface SwimContext {
   showDialog: (text: string) => void
   getStrings: () => PetStrings
   isBusy: () => boolean
+  /** 当前实际占位，随缩放变——粒子挂在全局层用视口坐标，必须按真尺寸算 */
+  petSize: () => { w: number; h: number }
 }
 
 interface Point {
@@ -527,8 +529,9 @@ export class WhaleSwimmer {
       // 下潜后回升跃起破浪水花触发
       if (progress > 0.72 && progress < 0.85 && !this.hasSplashedThisSession) {
         this.hasSplashedThisSession = true
-        this.spawnSplash(curX + 68, curY + 60, 5)
-        this.spawnWaterRipple(curX + 68, curY + 60, true)
+        const sz = this.ctx.petSize()
+        this.spawnSplash(curX + sz.w / 2, curY + sz.h * 0.6, 5)
+        this.spawnWaterRipple(curX + sz.w / 2, curY + sz.h * 0.6, true)
       }
     }
 

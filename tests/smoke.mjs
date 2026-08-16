@@ -230,6 +230,19 @@ check('切夜黑后身体变量', rootEl?.style.getPropertyValue('--pw-body') ==
 check('切夜黑后眼睛反白', rootEl?.style.getPropertyValue('--pw-eye') === '#F7F2E6')
 check('皮肤持久化', window.localStorage.getItem('pet-whale:palette') === 'night')
 
+// 大小：外观菜单里循环切档
+const sizeBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('大小'))
+check('外观菜单有大小', sizeBtn !== undefined)
+check('默认是标准档', sizeBtn?.textContent.includes('标准') === true)
+check('默认缩放为 1', rootEl?.style.getPropertyValue('--pw-scale') === '1')
+sizeBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+check('切到下一档 1.3', rootEl?.style.getPropertyValue('--pw-scale') === '1.3')
+check('大小已落盘', window.localStorage.getItem('pet-whale:scale') === '1.3')
+const sizeBtn2 = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('大小'))
+check('菜单原地刷新成大档', sizeBtn2?.textContent.includes('大') === true)
+// 非法档位的验证放到重挂那一段，那里才真的会走 loadScale
+
+
 // 行为子菜单：不应再出现“假装工作”，应包含“游泳”
 pet.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
 const moreBtn2 = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('更多设置'))
@@ -338,6 +351,8 @@ window.localStorage.setItem(
   'pet-whale:stats',
   JSON.stringify({ completedRounds: 100, errorCount: 0, interactionCount: 300, firstDate: '2020-01-01', bondTier: 0 }),
 )
+// 存储里塞个离谱值：重挂时该被拒掉回落到 1，而不是把屏幕占满
+window.localStorage.setItem('pet-whale:scale', '40')
 const dispose2 = exports_.apply(ctx)
 const rootEl2 = window.document.querySelector('[data-dsh-whale]')
 const pet2 = rootEl2?.querySelector('.pet-official')
@@ -348,6 +363,7 @@ pet2?.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancel
 ;[...(menu2?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('陪伴记录'))
   ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
 const bondItem2 = [...(menu2?.querySelectorAll('.pw-stats-item') ?? [])].find((el) => el.textContent.includes('关系'))
+check('非法档位被拒，回落标准', rootEl2?.style.getPropertyValue('--pw-scale') === '1')
 check('高分存档 → 形影不离档', bondItem2?.textContent.includes('形影不离') === true)
 check('满档不显示进度', bondItem2?.textContent.includes('满') === true)
 // 升档要落盘，不然每次进来都恭喜一遍

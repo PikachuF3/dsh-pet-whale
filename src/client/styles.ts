@@ -9,10 +9,12 @@ export const WHALE_CSS = `
   --pw-blush: #F0A0A0;
   --pw-eye: #2E2A24;
   --pw-pupil: #FBF8F0;
+  /* 尺寸总闸：只改这一个变量，下面所有几何都跟着走 */
+  --pw-scale: 1;
   position: fixed;
   z-index: 900;
-  width: 137px;
-  height: 101px;
+  width: calc(137px * var(--pw-scale));
+  height: calc(101px * var(--pw-scale));
   pointer-events: none;
   user-select: none;
   font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -90,8 +92,8 @@ export const WHALE_CSS = `
 }
 
 [data-dsh-whale] .pet-official {
-  width: 137px;
-  height: 101px;
+  width: calc(137px * var(--pw-scale));
+  height: calc(101px * var(--pw-scale));
   position: relative;
   cursor: grab;
   pointer-events: auto;
@@ -109,10 +111,10 @@ export const WHALE_CSS = `
 [data-dsh-whale] .dsh-whale-shadow {
   position: absolute;
   left: 50%;
-  bottom: -12px;
-  width: 79px;
-  height: 12px;
-  margin-left: -40px;
+  bottom: calc(-12px * var(--pw-scale));
+  width: calc(79px * var(--pw-scale));
+  height: calc(12px * var(--pw-scale));
+  margin-left: calc(-40px * var(--pw-scale));
   background: radial-gradient(ellipse, rgba(46,42,36,.24), transparent 65%);
   border-radius: 50%;
   animation: pw-shadowBob 3.2s ease-in-out infinite;
@@ -124,10 +126,10 @@ export const WHALE_CSS = `
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 146px;
-  height: 96px;
-  margin-left: -73px;
-  margin-top: -48px;
+  width: calc(146px * var(--pw-scale));
+  height: calc(96px * var(--pw-scale));
+  margin-left: calc(-73px * var(--pw-scale));
+  margin-top: calc(-48px * var(--pw-scale));
   border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(143, 181, 255, 0.28) 0%, rgba(77, 107, 254, 0.08) 50%, transparent 72%);
   opacity: 0;

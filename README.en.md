@@ -40,6 +40,7 @@ The repository's [preview.html](preview.html) is the same page and can be opened
 | Edge squish | Push it against a screen edge and it flattens against the glass; it springs back once you move away |
 | Held too long | Hold it in midair for over 2 seconds and it starts squirming to ask if you are still there; moving stops the nagging |
 | Belly up | The double-click reaction follows your bond: normally a 360 spin, but at Inseparable it rolls over and shows you its belly |
+| Custom size | Right-click - Appearance - Size cycles through Small / Standard / Large / Huge (0.8x - 1.6x). Scaling also moves the collision bounds, splash origins and edge detection, not just the visual |
 | Localization | Full Chinese and English copy, following the DSH locale service automatically; the standalone preview page detects the browser language and can be overridden manually |
 | Stats | The settings panel keeps running counts of completions, interactions, errors, and days spent together |
 | Sound | WebAudio-synthesized sounds, can be muted |

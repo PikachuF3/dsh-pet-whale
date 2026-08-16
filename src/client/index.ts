@@ -119,12 +119,45 @@ export function apply(ctx: Context): () => void {
   const menu = root.querySelector<HTMLElement>('.dsh-whale-menu')!
   const pupil = pet.querySelector<SVGCircleElement>('.pupil-highlight')
 
+  // ===== 大小 =====
+  const SCALE_KEY = 'pet-whale:scale'
+  /** 四档，对应 i18n 的 sizeNames */
+  const SCALE_CHOICES = [0.8, 1, 1.3, 1.6] as const
+  const loadScale = (): number => {
+    try {
+      const raw = Number(localStorage.getItem(SCALE_KEY))
+      // 只认预设档，别人往存储里塞个 40 会把屏幕占满
+      if (SCALE_CHOICES.includes(raw as (typeof SCALE_CHOICES)[number])) return raw
+    } catch {
+      // 忽略存储异常
+    }
+    return 1
+  }
+  let scale = loadScale()
+  const applyScale = (next: number) => {
+    scale = next
+    root.style.setProperty('--pw-scale', String(next))
+    try {
+      localStorage.setItem(SCALE_KEY, String(next))
+    } catch {
+      // 忽略存储异常
+    }
+    // 变大之后原来的位置可能已经顶出屏幕，重新钳一次
+    place()
+    savePos()
+  }
+  const scaleName = () => strings.panel.sizeNames[SCALE_CHOICES.indexOf(scale as (typeof SCALE_CHOICES)[number])]
+
   // ===== 位置（localStorage 记忆 + 视口钳制） =====
-  const PET_W = 137
-  const PET_H = 101
+  /** 一倍大小时的占位，实际尺寸要乘当前缩放 */
+  const BASE_W = 137
+  const BASE_H = 101
+  const PET_W = () => BASE_W * scale
+  const PET_H = () => BASE_H * scale
+  const petSize = () => ({ w: PET_W(), h: PET_H() })
   const clampPos = (x: number, y: number) => {
-    const maxX = Math.max(0, window.innerWidth - PET_W)
-    const maxY = Math.max(0, window.innerHeight - PET_H)
+    const maxX = Math.max(0, window.innerWidth - PET_W())
+    const maxY = Math.max(0, window.innerHeight - PET_H())
     return { x: Math.min(Math.max(0, x), maxX), y: Math.min(Math.max(0, y), maxY) }
   }
   const loadPos = () => {
@@ -137,7 +170,7 @@ export function apply(ctx: Context): () => void {
     } catch {
       // 解析失败回默认
     }
-    return clampPos(window.innerWidth - PET_W - 16, window.innerHeight - PET_H - 96)
+    return clampPos(window.innerWidth - PET_W() - 16, window.innerHeight - PET_H() - 96)
   }
   const place = () => {
     const { x, y } = clampPos(parseFloat(root.style.left) || 0, parseFloat(root.style.top) || 0)
@@ -151,6 +184,7 @@ export function apply(ctx: Context): () => void {
   document.body.appendChild(root)
   // 初始皮肤（默认陶土；用户换过后从 localStorage 恢复）
   applyPalette(root, paletteOf(loadPaletteId()))
+  root.style.setProperty('--pw-scale', String(scale))
 
   // ===== 主题联动：跟随 DSH 亮/暗主题 =====
   const readTheme = (): 'light' | 'dark' => {
@@ -240,6 +274,7 @@ export function apply(ctx: Context): () => void {
     popBubble,
     showDialog,
     getStrings: () => strings,
+    petSize,
     isBusy: () =>
       root.classList.contains(HIDDEN_CLASS) ||
       dragging ||
@@ -373,7 +408,7 @@ export function apply(ctx: Context): () => void {
         notifyDone()
         const curX = parseFloat(root.style.left) || 0
         const curY = parseFloat(root.style.top) || 0
-        swimmer.spawnConfetti(curX + 68, curY + 35, 24)
+        swimmer.spawnConfetti(curX + PET_W() / 2, curY + PET_H() * 0.35, 24)
       } else if (effective === 'error') {
         recordError()
       }
@@ -402,8 +437,8 @@ export function apply(ctx: Context): () => void {
     pet.classList.add('rolling', 'spouting')
     const curX = parseFloat(root.style.left) || 0
     const curY = parseFloat(root.style.top) || 0
-    swimmer.spawnSplash(curX + 68, curY + 65, 6)
-    swimmer.spawnWaterRipple(curX + 68, curY + 65, false)
+    swimmer.spawnSplash(curX + PET_W() / 2, curY + PET_H() * 0.64, 6)
+    swimmer.spawnWaterRipple(curX + PET_W() / 2, curY + PET_H() * 0.64, false)
     popBubble()
     window.setTimeout(() => popBubble(), 200)
     window.setTimeout(() => pet.classList.remove('rolling', 'spouting'), 1100)
@@ -1050,6 +1085,13 @@ export function apply(ctx: Context): () => void {
           })
           menu.appendChild(btn)
         }
+        appendMenuBtn(strings.panel.size(scaleName()), () => {
+          const i = SCALE_CHOICES.indexOf(scale as (typeof SCALE_CHOICES)[number])
+          applyScale(SCALE_CHOICES[(i + 1) % SCALE_CHOICES.length])
+          reopenMenu('appearance')
+          showDialog(strings.feedback.sizeSet(scaleName()))
+          sounds.play('bubble')
+        })
         appendMenuBtn(strings.panel.back, backMore, 'pw-back')
         return
       }
@@ -1232,7 +1274,7 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       const dx = e.clientX - cx
       const dy = e.clientY - cy
       const len = Math.hypot(dx, dy) || 1
-      const next = clampPos(cx - (dx / len) * AVOID_STEP - PET_W / 2, cy - (dy / len) * AVOID_STEP - PET_H / 2)
+      const next = clampPos(cx - (dx / len) * AVOID_STEP - PET_W() / 2, cy - (dy / len) * AVOID_STEP - PET_H() / 2)
       root.style.transition = 'left .35s ease, top .35s ease'
       root.style.left = `${next.x}px`
       root.style.top = `${next.y}px`
@@ -1423,7 +1465,7 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
    */
   let squeezeSaidAt = 0
   const updateEdge = (x: number, y: number) => {
-    const maxX = Math.max(0, window.innerWidth - PET_W)
+    const maxX = Math.max(0, window.innerWidth - PET_W())
     const onLeft = x <= EDGE_SLACK
     const onRight = x >= maxX - EDGE_SLACK
     root.classList.toggle('edge-left', onLeft)
@@ -1433,7 +1475,7 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     if (now - squeezeSaidAt < 4000) return
     squeezeSaidAt = now
     showDialog(pick(strings.feedback.squeezed))
-    swimmer.spawnDrip(x + (onLeft ? 24 : 112), y + 88)
+    swimmer.spawnDrip(x + (onLeft ? PET_W() * 0.18 : PET_W() * 0.82), y + PET_H() * 0.87)
   }
   const clearEdge = () => {
     root.classList.remove('edge-left', 'edge-right')
@@ -1486,7 +1528,7 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       const now = performance.now()
       if (now - lastDripTime > 380) {
         lastDripTime = now
-        swimmer.spawnDrip(p.x + 68, p.y + 88)
+        swimmer.spawnDrip(p.x + PET_W() / 2, p.y + PET_H() * 0.87)
       }
     }
   }
@@ -1501,8 +1543,8 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       root.classList.remove('dragging')
       const px = parseFloat(root.style.left) || 0
       const py = parseFloat(root.style.top) || 0
-      swimmer.spawnSplash(px + 68, py + 80, 4)
-      swimmer.spawnWaterRipple(px + 68, py + 80, false)
+      swimmer.spawnSplash(px + PET_W() / 2, py + PET_H() * 0.79, 4)
+      swimmer.spawnWaterRipple(px + PET_W() / 2, py + PET_H() * 0.79, false)
       savePos()
       // 保持初始朝向不变
       root.dataset.facing = swimmer.currentFacing

@@ -42,6 +42,10 @@ export interface PetStrings {
     statsDays: (n: number) => string
     /** 关系档位 + 距下一档的进度，满档时 pct 传 -1 */
     statsBond: (name: string, pct: number) => string
+    /** 大小档位入口，参数是当前档的名字 */
+    size: (name: string) => string
+    /** 四个档位的名字 */
+    sizeNames: [string, string, string, string]
     rest: string
     pretend: string
     thinkTicker: string
@@ -100,6 +104,7 @@ export interface PetStrings {
     dragIdle: string[]
     /** 被按在屏幕边上：挤扁了 */
     squeezed: string[]
+    sizeSet: (name: string) => string
     notifyOn: string
     notifyOff: string
     sysNotifyOn: string
@@ -195,6 +200,8 @@ const zh: PetStrings = {
     statsErrors: (n) => `🛠 遇到异常：${n} 次`,
     statsDays: (n) => `📅 共同陪伴：${n} 天`,
     statsBond: (name, pct) => (pct < 0 ? `💞 关系：${name}（满）` : `💞 关系：${name}（下一档 ${pct}%）`),
+    size: (name) => `📐 大小：${name}`,
+    sizeNames: ['小', '标准', '大', '特大'],
     rest: '休息',
     pretend: '💼 假装工作',
     thinkTicker: '🧠 思考链',
@@ -298,6 +305,7 @@ const zh: PetStrings = {
       '这边到头咯，再推就扁了 🫠',
       '呜，脸被压平了 (＞﹏＜)',
     ],
+    sizeSet: (name) => `变成${name}号啦~ 合适吗 🐳`,
     notifyOn: '好耶！你不在的时候我会在标签页上喊你 🔔',
     notifyOff: '不喊你了，安安静静的 🤫',
     sysNotifyOn: '系统通知已开启，跑到别的窗口也能收到 📢',
@@ -396,6 +404,8 @@ const en: PetStrings = {
     statsErrors: (n) => `🛠 Errors Encountered: ${n}`,
     statsDays: (n) => `📅 Days Together: ${n} d`,
     statsBond: (name, pct) => (pct < 0 ? `💞 Bond: ${name} (max)` : `💞 Bond: ${name} (next ${pct}%)`),
+    size: (name) => `📐 Size: ${name}`,
+    sizeNames: ['Small', 'Standard', 'Large', 'Huge'],
     rest: 'Rest',
     pretend: '💼 Pretend to work',
     thinkTicker: '🧠 Think ticker',
@@ -499,6 +509,7 @@ const en: PetStrings = {
       'That is the edge. Push more and I go flat 🫠',
       'Ow, my face is flattened (＞﹏＜)',
     ],
+    sizeSet: (name) => `Now I am ${name} size~ Does it fit? 🐳`,
     notifyOn: 'Got it! I will shout from the tab title while you are away 🔔',
     notifyOff: 'Staying quiet now 🤫',
     sysNotifyOn: 'System notifications on — you will hear me from any window 📢',
