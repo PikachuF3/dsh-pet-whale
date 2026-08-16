@@ -8,7 +8,7 @@ It uses the official DeepSeek whale outline, pure DOM animations, zero runtime t
 
 Open the standalone preview page to try every state and interaction:
 
-👉 **<https://nzl153.github.io/pet-whale/preview.html>**
+👉 **<https://nzl153.github.io/dsh-pet-whale/preview.html>**
 
 The repository's [preview.html](preview.html) is the same page and can be opened locally.
 

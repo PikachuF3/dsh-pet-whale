@@ -14,7 +14,7 @@ DeepSeek Harness（DSH）Web 界面的桌宠插件：右下角一只**官方轮�
 
 无需安装，点开即玩（全部状态与交互，官方轮廓版）：
 
-👉 **<https://nzl153.github.io/pet-whale/preview.html>**
+👉 **<https://nzl153.github.io/dsh-pet-whale/preview.html>**
 
 仓库内的 [preview.html](preview.html) 即预览页源码，本地直接打开同样可以体验。
 
