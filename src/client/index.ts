@@ -22,6 +22,17 @@ const SWIM_KEY = 'pet-whale:swim'
 const THINK_TICKER_KEY = 'pet-whale:think-ticker'
 const MINI_POS_KEY = 'pet-whale:mini-pos'
 const AUTO_HIDE_KEY = 'pet-whale:auto-hide'
+/** 完成提醒：页面在后台时闪标签页标题 */
+const NOTIFY_KEY = 'pet-whale:notify'
+/** 系统通知：需要浏览器授权，默认关 */
+const SYS_NOTIFY_KEY = 'pet-whale:sys-notify'
+/** 久坐提醒阈值（分钟），0 表示关 */
+const SEDENTARY_KEY = 'pet-whale:sedentary'
+const SEDENTARY_CHOICES = [0, 45, 60, 90] as const
+/** 久坐计时的心跳间隔 */
+const SEDENTARY_TICK_MS = 60000
+/** 离开页面超过这么久，视为已经休息过，久坐计时清零 */
+const SEDENTARY_AWAY_RESET_MS = 600000
 const AUTO_HIDE_CHECK_MS = 30000
 /** 智能避让：只有 idle 且光标在身侧停留这么久才让开 */
 const AVOID_DWELL_MS = 900
@@ -295,6 +306,7 @@ export function apply(ctx: Context): () => void {
       autoSound(effective)
       if (effective === 'celebrate') {
         recordCelebrate()
+        notifyDone()
         const curX = parseFloat(root.style.left) || 0
         const curY = parseFloat(root.style.top) || 0
         swimmer.spawnConfetti(curX + 68, curY + 35, 24)
@@ -424,6 +436,90 @@ export function apply(ctx: Context): () => void {
     popBubble()
     window.setTimeout(() => pet.classList.remove('joy'), 1100)
   }
+
+  // ===== 完成提醒：你不看着的时候，让标签页替它喊你 =====
+  // 鲸鱼演得再好，你切走了就等于没演。
+  let notifyOn = true
+  let sysNotifyOn = false
+  try {
+    notifyOn = localStorage.getItem(NOTIFY_KEY) !== '0'
+    sysNotifyOn = localStorage.getItem(SYS_NOTIFY_KEY) === '1'
+  } catch {
+    // 忽略存储失败
+  }
+  const hasNotificationApi = typeof window !== 'undefined' && 'Notification' in window
+  /** 我们改写标题前的原值；null 表示当前没在闪 */
+  let titleBeforeFlash: string | null = null
+  let flashedTitle = ''
+
+  const restoreTitle = () => {
+    if (titleBeforeFlash === null) return
+    // 只有标题仍是我们写的那串才还原——期间 DSH 自己改过标题的话，别覆盖人家的新值
+    if (document.title === flashedTitle) document.title = titleBeforeFlash
+    titleBeforeFlash = null
+    flashedTitle = ''
+  }
+  const flashTitle = () => {
+    if (titleBeforeFlash !== null) return
+    titleBeforeFlash = document.title
+    flashedTitle = `✅ ${strings.notify.titleDone} · ${titleBeforeFlash}`
+    document.title = flashedTitle
+  }
+  const sendSystemNotification = () => {
+    if (!sysNotifyOn || !hasNotificationApi) return
+    if (Notification.permission !== 'granted') return
+    try {
+      const n = new Notification(`🐳 ${strings.notify.titleDone}`, { body: strings.notify.bodyDone })
+      window.setTimeout(() => n.close(), 6000)
+    } catch {
+      // 通知构造失败（部分环境要求 ServiceWorker）时静默降级到标题闪烁
+    }
+  }
+  /** 回合完成时调用：只在页面不可见时才提醒 */
+  const notifyDone = () => {
+    if (!document.hidden) return
+    if (notifyOn) flashTitle()
+    sendSystemNotification()
+  }
+
+  // ===== 久坐提醒 =====
+  let sedentaryMin = 0
+  try {
+    const raw = Number(localStorage.getItem(SEDENTARY_KEY))
+    if ((SEDENTARY_CHOICES as readonly number[]).includes(raw)) sedentaryMin = raw
+  } catch {
+    // 忽略存储失败
+  }
+  let sittingMs = 0
+  let hiddenSince = 0
+  let sedentaryTimer = 0
+
+  const nudgeRest = () => {
+    if (root.classList.contains(HIDDEN_CLASS)) return
+    pet.classList.remove('welcome')
+    void pet.offsetWidth
+    pet.classList.add('welcome', 'spouting')
+    showDialog(pick(strings.feedback.restNudge))
+    sounds.play('bubble')
+    window.setTimeout(() => pet.classList.remove('welcome', 'spouting'), 1400)
+  }
+  const sedentaryTick = () => {
+    if (sedentaryMin === 0) return
+    if (document.hidden) return
+    sittingMs += SEDENTARY_TICK_MS
+    if (sittingMs >= sedentaryMin * 60000) {
+      sittingMs = 0
+      nudgeRest()
+    }
+  }
+  const startSedentary = () => {
+    if (sedentaryTimer !== 0) window.clearInterval(sedentaryTimer)
+    sedentaryTimer = 0
+    sittingMs = 0
+    if (sedentaryMin === 0) return
+    sedentaryTimer = window.setInterval(sedentaryTick, SEDENTARY_TICK_MS)
+  }
+  startSedentary()
 
   const triggerWelcome = () => {
     if (root.classList.contains(HIDDEN_CLASS) || visualState !== 'idle') return
@@ -692,10 +788,15 @@ export function apply(ctx: Context): () => void {
     root.classList.toggle('paused', document.hidden)
     mini?.classList.toggle('paused', document.hidden)
     if (document.hidden) {
+      hiddenSince = Date.now()
       hideTicker()
       swimmer.stop()
-    } else if (visualState === 'idle') {
-      swimmer.scheduleNext(2000)
+    } else {
+      // 回来了就收掉标题上的提醒；离开够久则视为休息过，久坐重新计时
+      restoreTitle()
+      if (hiddenSince !== 0 && Date.now() - hiddenSince >= SEDENTARY_AWAY_RESET_MS) sittingMs = 0
+      hiddenSince = 0
+      if (visualState === 'idle') swimmer.scheduleNext(2000)
     }
   }
   document.addEventListener('visibilitychange', onVisibility)
@@ -712,6 +813,13 @@ export function apply(ctx: Context): () => void {
       menu.appendChild(btn)
       return btn
     }
+    /** 切换开关后原地重画菜单：菜单不关、位置不动 */
+    const reopenMenu = (mode: 'main' | 'more' | 'appearance' | 'behavior' | 'stats' | 'rest') => {
+      buildMenu(mode)
+      menu.classList.add('open')
+      positionMenu(lastMenuPos.x, lastMenuPos.y)
+    }
+
     const buildMenu = (mode: 'main' | 'more' | 'appearance' | 'behavior' | 'stats' | 'rest' = 'main') => {
       menuMode = mode
       menu.textContent = ''
@@ -906,6 +1014,56 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
           menu.classList.add('open')
           positionMenu(lastMenuPos.x, lastMenuPos.y)
           if (next) sounds.play('bubble')
+        })
+        appendMenuBtn(`${strings.panel.notify}${notifyOn ? ' ✓' : ' ✕'}`, () => {
+          notifyOn = !notifyOn
+          try {
+            localStorage.setItem(NOTIFY_KEY, notifyOn ? '1' : '0')
+          } catch {
+            // 忽略存储失败
+          }
+          if (!notifyOn) restoreTitle()
+          showDialog(notifyOn ? strings.feedback.notifyOn : strings.feedback.notifyOff)
+          reopenMenu('behavior')
+        })
+        if (hasNotificationApi) {
+          appendMenuBtn(`${strings.panel.sysNotify}${sysNotifyOn ? ' ✓' : ' ✕'}`, () => {
+            const turningOn = !sysNotifyOn
+            const commit = (granted: boolean) => {
+              sysNotifyOn = turningOn && granted
+              try {
+                localStorage.setItem(SYS_NOTIFY_KEY, sysNotifyOn ? '1' : '0')
+              } catch {
+                // 忽略存储失败
+              }
+              showDialog(
+                !turningOn
+                  ? strings.feedback.sysNotifyOff
+                  : granted
+                    ? strings.feedback.sysNotifyOn
+                    : strings.feedback.sysNotifyDenied,
+              )
+              reopenMenu('behavior')
+            }
+            // 只在用户主动打开时才申请权限，不在挂载时骚扰
+            if (turningOn && Notification.permission === 'default') {
+              void Notification.requestPermission().then((p) => commit(p === 'granted'))
+              return
+            }
+            commit(Notification.permission === 'granted')
+          })
+        }
+        appendMenuBtn(strings.panel.sedentary(sedentaryMin), () => {
+          const i = SEDENTARY_CHOICES.indexOf(sedentaryMin as (typeof SEDENTARY_CHOICES)[number])
+          sedentaryMin = SEDENTARY_CHOICES[(i + 1) % SEDENTARY_CHOICES.length]
+          try {
+            localStorage.setItem(SEDENTARY_KEY, String(sedentaryMin))
+          } catch {
+            // 忽略存储失败
+          }
+          startSedentary()
+          showDialog(sedentaryMin === 0 ? strings.feedback.sedentaryOff : strings.feedback.sedentarySet(sedentaryMin))
+          reopenMenu('behavior')
         })
         appendMenuBtn(strings.panel.back, backMore, 'pw-back')
         return
@@ -1367,6 +1525,8 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
 // ===== 清理 =====
   const dispose = () => {
     window.clearTimeout(sleepTimer)
+    if (sedentaryTimer !== 0) window.clearInterval(sedentaryTimer)
+    restoreTitle()
     if (pokeDecayTimer !== 0) window.clearTimeout(pokeDecayTimer)
     if (sulkTimer !== 0) window.clearTimeout(sulkTimer)
     window.clearTimeout(dialogTimer)

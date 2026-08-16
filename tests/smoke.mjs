@@ -236,6 +236,44 @@ const behaviorButtons = [...(menu?.querySelectorAll('button') ?? [])]
 check('行为菜单不含假装工作', behaviorButtons.every((b) => !b.textContent.includes('假装工作')))
 check('行为菜单含游泳', behaviorButtons.some((b) => b.textContent.includes('游泳')))
 
+// 行为菜单：0.7 新增的两个开关都在
+check('行为菜单含完成提醒', behaviorButtons.some((b) => b.textContent.includes('完成提醒')))
+check('行为菜单含久坐提醒', behaviorButtons.some((b) => b.textContent.includes('久坐提醒')))
+check('久坐提醒默认关', behaviorButtons.some((b) => b.textContent.includes('久坐提醒：关')))
+
+// 久坐提醒：点一下切到 45 分钟
+const sedBtn = behaviorButtons.find((b) => b.textContent.includes('久坐提醒'))
+sedBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+const sedBtn2 = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('久坐提醒'))
+check('久坐提醒可切换到 45 分钟', sedBtn2?.textContent.includes('45') === true)
+check('久坐设置已落盘', window.localStorage.getItem('pet-whale:sedentary') === '45')
+pet.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
+menu?.classList.remove('open')
+
+// 完成提醒：页面在后台时完成一个回合 → 标签页标题被改写；回到前台 → 还原
+let pageHidden = false
+Object.defineProperty(window.document, 'hidden', { configurable: true, get: () => pageHidden })
+const originalTitle = 'DeepSeek Harness'
+window.document.title = originalTitle
+pageHidden = true
+currentId = 's1'
+ctx.sessions.list.notify()
+snap.running = true
+snap.partial = null
+snap.runningCalls = []
+snap.lastAgentError = null
+snap.openError = null
+sessionObservable.notify()
+snap.running = false
+snap.turnEnds = new Map([[1, 5], [2, 9]])
+sessionObservable.notify()
+check('后台完成回合 → 标题被改写', window.document.title.startsWith('✅'))
+check('标题保留原文', window.document.title.includes(originalTitle))
+
+pageHidden = false
+window.document.dispatchEvent(new window.Event('visibilitychange'))
+check('回到前台 → 标题还原', window.document.title === originalTitle)
+
 // dispose
 dispose()
 check('dispose 移除容器', window.document.querySelector('[data-dsh-whale]') === null)

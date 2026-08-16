@@ -31,6 +31,12 @@ export interface PetStrings {
     thinkTicker: string
     swim: string
     sound: string
+    /** 完成提醒（标签页标题） */
+    notify: string
+    /** 系统通知（需授权） */
+    sysNotify: string
+    /** 久坐提醒，参数是分钟数，0 表示关 */
+    sedentary: (min: number) => string
     schedule: string
     in1h: string
     daily: string
@@ -71,6 +77,20 @@ export interface PetStrings {
     pokeSulk: string[]
     /** 失落时被戳：被安慰 */
     comfort: string[]
+    notifyOn: string
+    notifyOff: string
+    sysNotifyOn: string
+    sysNotifyOff: string
+    sysNotifyDenied: string
+    sedentarySet: (min: number) => string
+    sedentaryOff: string
+    /** 久坐提醒时鲸鱼说的话 */
+    restNudge: string[]
+  }
+  /** 页面标题闪烁与系统通知用的文案 */
+  notify: {
+    titleDone: string
+    bodyDone: string
   }
   aria: {
     pet: string
@@ -122,6 +142,9 @@ const zh: PetStrings = {
     thinkTicker: '🧠 思考链',
     swim: '🏊 游泳',
     sound: '🔊 音效',
+    notify: '🔔 完成提醒',
+    sysNotify: '📢 系统通知',
+    sedentary: (min) => (min === 0 ? '⏰ 久坐提醒：关' : `⏰ 久坐提醒：${min} 分钟`),
     schedule: '🕐 定时隐藏',
     in1h: '1 小时后隐藏',
     daily: '每晚 22:00 隐藏',
@@ -195,6 +218,23 @@ const zh: PetStrings = {
       '被摸了摸头，好像又有力气了 ✨',
       '有你在就没关系啦，再来一次！🐋',
     ],
+    notifyOn: '好耶！你不在的时候我会在标签页上喊你 🔔',
+    notifyOff: '不喊你了，安安静静的 🤫',
+    sysNotifyOn: '系统通知已开启，跑到别的窗口也能收到 📢',
+    sysNotifyOff: '系统通知已关闭 🔕',
+    sysNotifyDenied: '浏览器不让我发通知，去地址栏左边的锁里放行一下 🥺',
+    sedentarySet: (min) => `好，坐满 ${min} 分钟我就浮上来提醒你 ⏰`,
+    sedentaryOff: '久坐提醒关掉啦，你随意 ~',
+    restNudge: [
+      '坐好久啦，起来动动肩膀吧 🐳',
+      '喝口水？我陪你歇一会儿 ☕',
+      '眼睛也要休息的，看看远处吧 ✨',
+      '深海也需要浮上来换气呀，你也是 🫧',
+    ],
+  },
+  notify: {
+    titleDone: '完成了',
+    bodyDone: '这一轮跑完啦，回来看看吧',
   },
   aria: {
     pet: '桌宠小鲸鱼',
@@ -246,6 +286,9 @@ const en: PetStrings = {
     thinkTicker: '🧠 Think ticker',
     swim: '🏊 Swimming',
     sound: '🔊 Sound',
+    notify: '🔔 Finish alert',
+    sysNotify: '📢 System notification',
+    sedentary: (min) => (min === 0 ? '⏰ Break reminder: off' : `⏰ Break reminder: ${min} min`),
     schedule: '🕐 Auto-hide',
     in1h: 'Hide in 1 hour',
     daily: 'Hide every day at 22:00',
@@ -319,6 +362,23 @@ const en: PetStrings = {
       'That head pat helped. I feel better ✨',
       'With you here it is fine. Let us try again! 🐋',
     ],
+    notifyOn: 'Got it! I will shout from the tab title while you are away 🔔',
+    notifyOff: 'Staying quiet now 🤫',
+    sysNotifyOn: 'System notifications on — you will hear me from any window 📢',
+    sysNotifyOff: 'System notifications off 🔕',
+    sysNotifyDenied: 'The browser blocked notifications. Allow them from the lock icon 🥺',
+    sedentarySet: (min) => `Alright, I will surface after ${min} minutes of sitting ⏰`,
+    sedentaryOff: 'Break reminder off. Do your thing~',
+    restNudge: [
+      'You have been sitting a while. Roll those shoulders 🐳',
+      'Water break? I will rest with you ☕',
+      'Eyes need rest too — look at something far away ✨',
+      'Even the deep sea surfaces to breathe. So should you 🫧',
+    ],
+  },
+  notify: {
+    titleDone: 'Done',
+    bodyDone: 'This round finished. Come take a look',
   },
   aria: {
     pet: 'Desktop pet whale',

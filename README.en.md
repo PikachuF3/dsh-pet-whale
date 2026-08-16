@@ -31,6 +31,10 @@ The repository's [preview.html](preview.html) is the same page and can be opened
 | Hide/recall | Hide to a small 🐳 button; state persists across refresh |
 | Scheduled hide | Hide after 1 hour or every day at 22:00 |
 | Free swimming | Toggle "Swim" to let the whale roam the page along cubic Bezier paths, with banking, adaptive flipping, depth dives, wake ripples, and splashes; it yields while the agent is busy, and the preference is persisted |
+| Poke escalation | Pokes 1-2 get the usual squish, 3-5 make it lean away annoyed, 6+ turn it away with an angry brow; the streak decays after 2.6s of no poking, and it drops the mood the moment the agent starts working |
+| Comforting | Poking during the post-error disappointed state counts as comfort: a happy animation, a warm line, and the sulk ends early |
+| Finish alert | When a turn completes while you are on another tab, the tab title becomes "✅ Done · <original>" and restores when you come back; an optional system notification is off by default and only asks for permission when you enable it |
+| Break reminder | Set 45 / 60 / 90 minutes and the whale surfaces with a spout to nudge you; off by default, and leaving the page for over 10 minutes counts as a rest and resets the timer |
 | Localization | Full Chinese and English copy, following the DSH locale service automatically; the standalone preview page detects the browser language and can be overridden manually |
 | Stats | The settings panel keeps running counts of completions, interactions, errors, and days spent together |
 | Sound | WebAudio-synthesized sounds, can be muted |
