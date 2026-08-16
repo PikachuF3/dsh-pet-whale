@@ -254,6 +254,19 @@ export const WHALE_CSS = `
   animation: pw-dizzyShake 0.35s ease-in-out infinite alternate;
 }
 
+/* 连戳中段：不耐烦，侧身躲一下 */
+[data-dsh-whale] .pet-official.annoyed {
+  animation: pw-annoyedDodge 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
+}
+
+/* 连戳过头：闹脾气，转过身去闭眼不理人（沿用已有的 sleep-eyes 闭眼元素） */
+[data-dsh-whale] .pet-official.sulking {
+  animation: pw-sulkTurn 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) forwards !important;
+}
+[data-dsh-whale] .pet-official.sulking .eye-group .eye,
+[data-dsh-whale] .pet-official.sulking .eye-group .pupil-highlight { opacity: 0 !important; }
+[data-dsh-whale] .pet-official.sulking .eye-group .sleep-eyes { display: inline !important; }
+
 /* 欢迎态 */
 [data-dsh-whale] .pet-official.welcome {
   animation: pw-leap2 1.2s ease-in-out !important;
@@ -696,6 +709,18 @@ export const WHALE_CSS = `
   50%      { transform: translate(0.35px, -0.42px); }
 }
 
+@keyframes pw-annoyedDodge {
+  0%   { transform: translateX(0) rotate(0deg); }
+  35%  { transform: translateX(-9px) rotate(-7deg); }
+  65%  { transform: translateX(4px) rotate(3deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+/* 背过身：横向翻面到一半停住，读作"扭头不看你" */
+@keyframes pw-sulkTurn {
+  0%   { transform: rotate(0deg) scale(1, 1); }
+  45%  { transform: rotate(-10deg) scale(0.94, 1.05); }
+  100% { transform: rotate(-6deg) scale(0.97, 1.02); }
+}
 @keyframes pw-dizzyShake {
   0%   { transform: rotate(-12deg) scale(0.95); }
   100% { transform: rotate(12deg) scale(1.05); }

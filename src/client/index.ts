@@ -279,6 +279,8 @@ export function apply(ctx: Context): () => void {
 
   const setState = (next: WhaleState, changed: boolean) => {
     const effective: WhaleState = pretendOn ? 'working' : next
+    // 真开始干活了就别端着脾气，闹脾气只在闲着的时候成立
+    if (effective !== 'idle' && sulking) clearSulk()
     if (effective !== 'idle') wake()
     for (const s of STATES) pet.classList.toggle(s, s === effective)
     visualState = effective
@@ -350,6 +352,77 @@ export function apply(ctx: Context): () => void {
     showDialog(pick(strings.feedback.pokeDizzy))
     window.setTimeout(() => pet.classList.remove('dizzy'), 900)
   }
+  // ===== 连戳升级 =====
+  // 戳一下就随机演一个，戳二十下还是同样的随机分布——那是控件，不是活物。
+  // 连戳计数会在停手后自己衰减，所以"惹毛它"和"哄好它"都由手速决定。
+  const POKE_ANNOYED_AT = 3
+  const POKE_SULK_AT = 6
+  /** 停手这么久，连戳计数清零 */
+  const POKE_DECAY_MS = 2600
+  /** 闹脾气持续时长，期间再戳只会更闹 */
+  const SULK_MS = 4200
+  let pokeStreak = 0
+  let pokeDecayTimer = 0
+  let sulking = false
+  let sulkTimer = 0
+
+  const clearSulk = () => {
+    if (sulkTimer !== 0) {
+      window.clearTimeout(sulkTimer)
+      sulkTimer = 0
+    }
+    sulking = false
+    pet.classList.remove('sulking')
+  }
+  const bumpPokeStreak = () => {
+    pokeStreak += 1
+    if (pokeDecayTimer !== 0) window.clearTimeout(pokeDecayTimer)
+    pokeDecayTimer = window.setTimeout(() => {
+      pokeDecayTimer = 0
+      pokeStreak = 0
+    }, POKE_DECAY_MS)
+  }
+  const triggerAnnoyed = () => {
+    markActive()
+    recordInteraction()
+    pet.classList.remove('annoyed', 'squish', 'dizzy', 'joy')
+    void pet.offsetWidth
+    pet.classList.add('annoyed')
+    sounds.play('bubble')
+    showDialog(pick(strings.feedback.pokeAnnoyed))
+    window.setTimeout(() => pet.classList.remove('annoyed'), 520)
+  }
+  const triggerSulk = () => {
+    markActive()
+    recordInteraction()
+    clearSulk()
+    sulking = true
+    pet.classList.remove('annoyed', 'squish', 'dizzy', 'joy', 'rolling')
+    void pet.offsetWidth
+    pet.classList.add('sulking')
+    sounds.play('bubble')
+    showDialog(pick(strings.feedback.pokeSulk))
+    sulkTimer = window.setTimeout(() => {
+      sulkTimer = 0
+      clearSulk()
+      pokeStreak = 0
+    }, SULK_MS)
+  }
+  /** 失落时被戳：当作安慰，提前结束自愈 */
+  const triggerComfort = () => {
+    markActive()
+    recordInteraction()
+    clearSulk()
+    pokeStreak = 0
+    pet.classList.remove('joy', 'squish', 'dizzy', 'annoyed')
+    void pet.offsetWidth
+    pet.classList.add('joy')
+    sounds.play('celebrate')
+    showDialog(pick(strings.feedback.comfort))
+    popBubble()
+    window.setTimeout(() => pet.classList.remove('joy'), 1100)
+  }
+
   const triggerWelcome = () => {
     if (root.classList.contains(HIDDEN_CLASS) || visualState !== 'idle') return
     pet.classList.remove('welcome')
@@ -1143,7 +1216,30 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       return
     }
 
+    // 失落时的一戳是安慰，不该被随机三选一顶掉
+    if (visualState === 'disappointed' && driver.soothe()) {
+      triggerComfort()
+      return
+    }
+
     markActive()
+    bumpPokeStreak()
+
+    // 已经闹上了：再戳只是火上浇油，不重置动画
+    if (sulking) {
+      recordInteraction()
+      showDialog(pick(strings.feedback.pokeSulk))
+      return
+    }
+    if (pokeStreak >= POKE_SULK_AT) {
+      triggerSulk()
+      return
+    }
+    if (pokeStreak >= POKE_ANNOYED_AT) {
+      triggerAnnoyed()
+      return
+    }
+
     const rand = Math.random()
     if (rand < 0.65) {
       triggerSquish()
@@ -1263,6 +1359,8 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
 // ===== 清理 =====
   const dispose = () => {
     window.clearTimeout(sleepTimer)
+    if (pokeDecayTimer !== 0) window.clearTimeout(pokeDecayTimer)
+    if (sulkTimer !== 0) window.clearTimeout(sulkTimer)
     window.clearTimeout(dialogTimer)
     if (eyeRaf !== 0) window.cancelAnimationFrame(eyeRaf)
     unsubList?.()

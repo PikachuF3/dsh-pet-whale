@@ -65,6 +65,12 @@ export interface PetStrings {
     welcome: string
     joy: string[]
     pokeDizzy: string[]
+    /** 连戳中段：开始不耐烦 */
+    pokeAnnoyed: string[]
+    /** 连戳过头：闹脾气 */
+    pokeSulk: string[]
+    /** 失落时被戳：被安慰 */
+    comfort: string[]
   }
   aria: {
     pet: string
@@ -173,6 +179,22 @@ const zh: PetStrings = {
       '晕头转向了... 别戳太用力呀 🥺',
       '晃晃脑袋，差点被戳倒啦 ~',
     ],
+    pokeAnnoyed: [
+      '喂喂喂，戳上瘾啦？(￣▽￣)"',
+      '再戳我就要游走咯 ~',
+      '好啦好啦，知道你在了 🐳',
+      '肚皮都要被戳凹了啦 >_<',
+    ],
+    pokeSulk: [
+      '哼，不理你了 (￣ε(#￣)',
+      '鲸鱼罢工中，请稍后再试 💤',
+      '生气了！要哄哄才理你 (｀へ´)',
+    ],
+    comfort: [
+      '呜... 谢谢你还在 (´;ω;`)',
+      '被摸了摸头，好像又有力气了 ✨',
+      '有你在就没关系啦，再来一次！🐋',
+    ],
   },
   aria: {
     pet: '桌宠小鲸鱼',
@@ -280,6 +302,22 @@ const en: PetStrings = {
       'Woah, gentle please! Feeling a bit dizzy @-@',
       'Spinning around... don\'t poke too hard 🥺',
       'Shaking my head, almost fell over~',
+    ],
+    pokeAnnoyed: [
+      'Hey, hooked on poking me? (￣▽￣)"',
+      'Poke again and I am swimming away~',
+      'Alright alright, I know you are there 🐳',
+      'My belly is getting dented >_<',
+    ],
+    pokeSulk: [
+      'Hmph. Not talking to you (￣ε(#￣)',
+      'Whale on strike. Try again later 💤',
+      'Now I am upset! Cheer me up first (｀へ´)',
+    ],
+    comfort: [
+      'Sniff... thanks for staying (´;ω;`)',
+      'That head pat helped. I feel better ✨',
+      'With you here it is fine. Let us try again! 🐋',
     ],
   },
   aria: {

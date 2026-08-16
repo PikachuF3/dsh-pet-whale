@@ -161,6 +161,23 @@ check('无会话 → idle', classesOf() === 'idle')
 pet.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
 check('单击触发加权互动类', pet.classList.contains('squish') || pet.classList.contains('rolling') || pet.classList.contains('dizzy'))
 
+// 连戳升级：戳到第 3 下开始不耐烦，第 6 下闹脾气
+const poke = () => pet.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+poke() // 第 2 下（上面已经戳过一次）
+check('连戳 2 下仍是普通反应', !pet.classList.contains('annoyed') && !pet.classList.contains('sulking'))
+poke()
+check('连戳 3 下进入不耐烦', pet.classList.contains('annoyed'))
+poke(); poke(); poke()
+check('连戳 6 下闹脾气', pet.classList.contains('sulking'))
+check('闹脾气时不再叠加不耐烦', !pet.classList.contains('annoyed'))
+
+// 干活了就不端着脾气
+currentId = 's1'
+ctx.sessions.list.notify()
+check('进入非 idle 状态自动收起脾气', !pet.classList.contains('sulking'))
+currentId = undefined
+ctx.sessions.list.notify()
+
 // 右键菜单：快捷菜单精简，更多设置进入分类子菜单
 pet.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
 const menu = rootEl.querySelector('.dsh-whale-menu')

@@ -19,8 +19,8 @@ export interface WhaleSnapshot {
   openError: unknown | null
   /** 已完成回合数 → 结束事件 seq */
   turnEnds: ReadonlyMap<number, number>
-        /** 等待用户处理：approval / plan-review / question */
-    pending?: readonly unknown[]
+  /** 等待用户处理：approval / plan-review / question */
+  pending?: readonly unknown[]
 }
 
 export const ERROR_MS = 4000
@@ -90,20 +90,19 @@ export class WhaleDriver {
     if (!snap.running) this.stickyUntil = null
 
     const waiting = (snap.pending?.length ?? 0) > 0
-      let next: WhaleState
+    let next: WhaleState
     if (waiting) {
-        next = 'wait'
-      } else if (this.transient !== null) {
+      next = 'wait'
+    } else if (this.transient !== null) {
       if (now < this.transient.until) {
         next = this.transient.state
+      } else if (this.transient.state === 'error') {
+        // 报错演完接一段失落自愈，而不是硬切回常态
+        this.transient = { state: 'disappointed', until: now + DISAPPOINTED_MS }
+        next = 'disappointed'
       } else {
-                  if (this.transient.state === 'error') {
-            this.transient = { state: 'disappointed', until: now + DISAPPOINTED_MS }
-            next = 'disappointed'
-          } else {
-            this.transient = null
-            next = deriveContinuous(snap, this.stickyUntil, now)
-          }
+        this.transient = null
+        next = deriveContinuous(snap, this.stickyUntil, now)
       }
     } else {
       next = deriveContinuous(snap, this.stickyUntil, now)
@@ -111,6 +110,17 @@ export class WhaleDriver {
     const changed = next !== this.current
     this.current = next
     return { state: next, changed }
+  }
+
+  /**
+   * 安抚：失落时被戳，提前结束这段自愈。
+   * 只对 disappointed 生效——error 正在报的时候不该被一戳抹掉，
+   * celebrate 也没有提前结束的道理。返回是否真的安抚到了。
+   */
+  soothe(): boolean {
+    if (this.transient === null || this.transient.state !== 'disappointed') return false
+    this.transient = null
+    return true
   }
 
   get state(): WhaleState {
