@@ -58,7 +58,7 @@ const WOOZY_MS = 12000
 /** 翻肚皮动画时长，与 pw-bellyUp 对齐 */
 const BELLY_UP_MS = 2000
 /** 拖着不放又不动多久开始不耐烦 */
-const DRAG_IDLE_MS = 3000
+const DRAG_IDLE_MS = 2000
 /** 判定"贴边"的容差：拖到离边这么近就算压上去了 */
 const EDGE_SLACK = 2
 /** 离开页面超过这么久，视为已经休息过，久坐计时清零 */
