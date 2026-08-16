@@ -94,6 +94,12 @@ export interface PetStrings {
     comfort: string[]
     /** 抓着左右猛甩：甩晕了 */
     shaken: string[]
+    /** 双击：翻肚皮 */
+    bellyUp: string[]
+    /** 拖着不放又不动：不耐烦 */
+    dragIdle: string[]
+    /** 被按在屏幕边上：挤扁了 */
+    squeezed: string[]
     notifyOn: string
     notifyOff: string
     sysNotifyOn: string
@@ -274,6 +280,23 @@ const zh: PetStrings = {
       '天旋地转... 我要吐泡泡了 🫧',
       '停停停！海水都被你搅浑啦 >_<',
       '眼冒金星... 让我缓缓 (@_@;)',
+    ],
+    bellyUp: [
+      '翻个肚皮给你看~ 只对你哦 ♡',
+      '哗啦——肚皮朝天，最舒服的姿势 (´∀｀)',
+      '晒肚皮时间！别戳痒痒肉 🐳',
+      '完全放松状态，可以随便摸 ✨',
+    ],
+    dragIdle: [
+      '举着不动... 手不酸吗 (・_・)',
+      '要放我下来了吗，还是继续举着 ~',
+      '悬在半空有点没安全感呀 🥺',
+      '喂——还在吗？我还挂着呢 🐋',
+    ],
+    squeezed: [
+      '挤挤挤... 贴在墙上啦 >_<',
+      '这边到头咯，再推就扁了 🫠',
+      '呜，脸被压平了 (＞﹏＜)',
     ],
     notifyOn: '好耶！你不在的时候我会在标签页上喊你 🔔',
     notifyOff: '不喊你了，安安静静的 🤫',
@@ -458,6 +481,23 @@ const en: PetStrings = {
       'The room is spinning... I might blow bubbles 🫧',
       'Stop stop stop! You stirred up the whole sea >_<',
       'Seeing stars... give me a second (@_@;)',
+    ],
+    bellyUp: [
+      'Belly up, just for you ♡',
+      'Whoosh - belly to the sky, the comfiest pose (´∀｀)',
+      'Belly sunbathing time! Mind the ticklish spot 🐳',
+      'Fully relaxed. Pet away ✨',
+    ],
+    dragIdle: [
+      'Still holding me up... arm not tired? (・_・)',
+      'Are you putting me down, or is this the new normal~',
+      'Dangling in midair feels a bit unsafe 🥺',
+      'Helloo - still there? I am still hanging here 🐋',
+    ],
+    squeezed: [
+      'Squish... pressed against the wall >_<',
+      'That is the edge. Push more and I go flat 🫠',
+      'Ow, my face is flattened (＞﹏＜)',
     ],
     notifyOn: 'Got it! I will shout from the tab title while you are away 🔔',
     notifyOff: 'Staying quiet now 🤫',

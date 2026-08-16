@@ -128,6 +128,16 @@ export class WhaleSwimmer {
   }
 
   /** 用户开始拖拽/点击交互时立即中断游泳 */
+  /** 被甩晕之后游不直，到这个时刻为止 */
+  private woozyUntil = 0
+  /** 晕了多久：期间的航迹会明显更歪 */
+  public setWoozy(ms: number): void {
+    this.woozyUntil = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + ms
+  }
+  private get isWoozy(): boolean {
+    return (typeof performance !== 'undefined' ? performance.now() : Date.now()) < this.woozyUntil
+  }
+
   public interrupt(): void {
     this.stop()
     if (this.enabled) {
@@ -248,8 +258,9 @@ export class WhaleSwimmer {
     const cx = vw / 2
     const cy = vh / 2
     const toCenterAngle = Math.atan2(cy - start.y, cx - start.x)
-    // 叠加随机扰动角 (±60°)
-    const angle = toCenterAngle + (Math.random() * 1.8 - 0.9)
+    // 叠加随机扰动角 (±60°)；刚被甩晕的时候连方向都拿不准，扰动放大一倍多
+    const wobble = this.isWoozy ? 2.2 : 1
+    const angle = toCenterAngle + (Math.random() * 1.8 - 0.9) * wobble
 
     const rawTx = start.x + Math.cos(angle) * dist
     const rawTy = start.y + Math.sin(angle) * dist + (mode === 'dive' ? (30 + Math.random() * 40) : 0)
@@ -262,7 +273,7 @@ export class WhaleSwimmer {
     // 法向量用于生成侧向拱起弧度
     const nx = -dy / actualDist
     const ny = dx / actualDist
-    const curveAmp = (mode === 'dive' ? 45 : (30 + Math.random() * 35)) * (Math.random() < 0.5 ? 1 : -1)
+    const curveAmp = (mode === 'dive' ? 45 : (30 + Math.random() * 35)) * (Math.random() < 0.5 ? 1 : -1) * wobble
 
     let cp1: Point
     let cp2: Point

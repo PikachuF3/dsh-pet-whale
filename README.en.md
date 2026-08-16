@@ -36,7 +36,10 @@ The repository's [preview.html](preview.html) is the same page and can be opened
 | Finish alert | When a turn completes while you are on another tab, the tab title becomes "✅ Done · <original>" and restores when you come back; an optional system notification is off by default and only asks for permission when you enable it |
 | Break reminder | Set 45 / 60 / 90 minutes and the whale surfaces with a spout to nudge you; off by default, and leaving the page for over 10 minutes counts as a rest and resets the timer |
 | Bond level | Interactions, completed turns and days together all feed one score, split into three tiers: Acquainted / Close / Inseparable. The tier changes poke lines and greetings, and at Inseparable the whale occasionally speaks up on its own; it announces each promotion, and the current tier and progress show up under Companion Stats |
-| Shake dizzy | Grab it and swing it left and right - four direction changes within a second make it dizzy: the eyes go @@, it begs you to stop, and the body keeps wobbling after you let go; hand tremor and slow back-and-forth do not count |
+| Shake dizzy | Grab it and swing it left and right - four direction changes within a second make it dizzy: the eyes go @@, it begs you to stop, and the body keeps wobbling after you let go; hand tremor and slow back-and-forth do not count. It stays woozy for the next dozen seconds too, with a visibly crooked swim path |
+| Edge squish | Push it against a screen edge and it flattens against the glass; it springs back once you move away |
+| Held too long | Hold it in midair for over 3 seconds and it starts squirming to ask if you are still there; moving stops the nagging |
+| Belly up | The double-click reaction follows your bond: normally a 360 spin, but at Inseparable it rolls over and shows you its belly |
 | Localization | Full Chinese and English copy, following the DSH locale service automatically; the standalone preview page detects the browser language and can be overridden manually |
 | Stats | The settings panel keeps running counts of completions, interactions, errors, and days spent together |
 | Sound | WebAudio-synthesized sounds, can be muted |

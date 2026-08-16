@@ -293,7 +293,7 @@ for (const x of [340, 260, 340, 260, 340]) {
 }
 check('猛甩后进入甩晕态', pet?.classList.contains('shaken') === true)
 check('甩晕说了话', /晕|停停停|金星|泡泡/.test(dialog?.textContent ?? ''))
-window.dispatchEvent(Object.assign(ptr('pointerup', 340), { pointerId: 1 }))
+pet.dispatchEvent(Object.assign(ptr('pointerup', 340), { pointerId: 1 }))
 
 // 慢慢来回挪不该被当成甩：行程够但每次都超出时间窗
 pet.classList.remove('shaken')
@@ -301,7 +301,36 @@ pet.dispatchEvent(Object.assign(ptr('pointerdown', 300), { pointerId: 2 }))
 pet.dispatchEvent(Object.assign(ptr('pointermove', 340), { pointerId: 2 }))
 pet.dispatchEvent(Object.assign(ptr('pointermove', 335), { pointerId: 2 }))
 check('小幅晃动不算甩', pet?.classList.contains('shaken') === false)
-window.dispatchEvent(Object.assign(ptr('pointerup', 335), { pointerId: 2 }))
+pet.dispatchEvent(Object.assign(ptr('pointerup', 335), { pointerId: 2 }))
+
+// 双击：初识档还轮不到翻肚皮，仍是翻跟头
+pet.classList.remove('shaken')
+pet.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true, cancelable: true }))
+check('初识档双击仍是翻滚', pet?.classList.contains('belly-up') === false)
+
+// 拖到最左边 → 挤扁；离开边缘 → 恢复
+rootEl.style.left = '400px'
+rootEl.style.top = '300px'
+pet.dispatchEvent(Object.assign(ptr('pointerdown', 300), { pointerId: 3 }))
+pet.dispatchEvent(Object.assign(ptr('pointermove', -2000), { pointerId: 3 }))
+check('贴左边挤扁', rootEl?.classList.contains('edge-left') === true)
+pet.dispatchEvent(Object.assign(ptr('pointermove', 500), { pointerId: 3 }))
+check('离开边缘恢复', rootEl?.classList.contains('edge-left') === false)
+pet.dispatchEvent(Object.assign(ptr('pointerup', 500), { pointerId: 3 }))
+check(
+  '松手清掉边缘态',
+  rootEl?.classList.contains('edge-left') === false && rootEl?.classList.contains('edge-right') === false,
+)
+
+// 拖着不放又不动：三秒后开始不耐烦。这条只能真等，没有假时钟
+pet.dispatchEvent(Object.assign(ptr('pointerdown', 300), { pointerId: 4 }))
+pet.dispatchEvent(Object.assign(ptr('pointermove', 340), { pointerId: 4 }))
+check('刚拖起来还不耐烦不了', pet?.classList.contains('impatient') === false)
+await new Promise((r) => setTimeout(r, 3200))
+check('拖着不动三秒 → 不耐烦', pet?.classList.contains('impatient') === true)
+check('不耐烦说了话', /手不酸|放我下来|半空|还在吗/.test(dialog?.textContent ?? ''))
+pet.dispatchEvent(Object.assign(ptr('pointerup', 340), { pointerId: 4 }))
+check('松手不再不耐烦', pet?.classList.contains('impatient') === false)
 
 // 熟悉度：直接把存档写成高分，重挂一次看是否进到满档
 dispose()
@@ -323,6 +352,10 @@ check('高分存档 → 形影不离档', bondItem2?.textContent.includes('形�
 check('满档不显示进度', bondItem2?.textContent.includes('满') === true)
 // 升档要落盘，不然每次进来都恭喜一遍
 check('升档已写回存档', JSON.parse(window.localStorage.getItem('pet-whale:stats')).bondTier === 2)
+const dialog2 = rootEl2?.querySelector('.dsh-whale-dialog')
+pet2?.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true, cancelable: true }))
+check('形影不离档双击翻肚皮', pet2?.classList.contains('belly-up') === true)
+check('翻肚皮说了话', /肚皮|放松/.test(dialog2?.textContent ?? ''))
 dispose2()
 
 // dispose

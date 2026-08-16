@@ -53,6 +53,14 @@ const SHAKE_WINDOW_MS = 1100
 const SHAKEN_MS = 1600
 /** 晕完还要缓一会儿，不然一路甩下去会连环触发 */
 const SHAKE_COOLDOWN_MS = 1400
+/** 甩晕之后游不直的时长 */
+const WOOZY_MS = 12000
+/** 翻肚皮动画时长，与 pw-bellyUp 对齐 */
+const BELLY_UP_MS = 2000
+/** 拖着不放又不动多久开始不耐烦 */
+const DRAG_IDLE_MS = 3000
+/** 判定"贴边"的容差：拖到离边这么近就算压上去了 */
+const EDGE_SLACK = 2
 /** 离开页面超过这么久，视为已经休息过，久坐计时清零 */
 const SEDENTARY_AWAY_RESET_MS = 600000
 const AUTO_HIDE_CHECK_MS = 30000
@@ -1321,8 +1329,33 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     pet.classList.add('shaken')
     sounds.play('bubble')
     showDialog(pick(strings.feedback.shaken))
+    // 后遗症：接下来一段时间游不直
+    swimmer.setWoozy(SHAKEN_MS + WOOZY_MS)
     window.setTimeout(() => pet.classList.remove('shaken'), SHAKEN_MS)
   }
+  /** 双击的专属反应：翻肚皮。翻着的时候不接别的动作，让这两秒完整演完 */
+  let bellyUpUntil = 0
+  const triggerBellyUp = () => {
+    const now = performance.now()
+    if (now < bellyUpUntil) return
+    bellyUpUntil = now + BELLY_UP_MS
+    markActive()
+    recordInteraction()
+    // 双击必然先来两次单击，连戳计数已经涨了；翻肚皮是亲昵不是骚扰，清掉
+    pokeStreak = 0
+    if (pokeDecayTimer !== 0) {
+      window.clearTimeout(pokeDecayTimer)
+      pokeDecayTimer = 0
+    }
+    if (sulking) clearSulk()
+    pet.classList.remove('squish', 'dizzy', 'joy', 'annoyed', 'shaken')
+    void pet.offsetWidth
+    pet.classList.add('belly-up')
+    sounds.play('trick')
+    showDialog(pick(strings.feedback.bellyUp))
+    window.setTimeout(() => pet.classList.remove('belly-up'), BELLY_UP_MS)
+  }
+
   const trackShake = (x: number) => {
     const now = performance.now()
     const delta = x - shakeLegFrom
@@ -1384,6 +1417,50 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
         sounds.play('bubble')
       }, 700)
   }
+  /**
+   * 贴边挤扁。只在拖拽时判定——自己游到边上是贴着走，不是被人按上去的。
+   * 台词有独立冷却，不然沿着边拖一路会一直喊。
+   */
+  let squeezeSaidAt = 0
+  const updateEdge = (x: number, y: number) => {
+    const maxX = Math.max(0, window.innerWidth - PET_W)
+    const onLeft = x <= EDGE_SLACK
+    const onRight = x >= maxX - EDGE_SLACK
+    root.classList.toggle('edge-left', onLeft)
+    root.classList.toggle('edge-right', onRight)
+    if (!onLeft && !onRight) return
+    const now = performance.now()
+    if (now - squeezeSaidAt < 4000) return
+    squeezeSaidAt = now
+    showDialog(pick(strings.feedback.squeezed))
+    swimmer.spawnDrip(x + (onLeft ? 24 : 112), y + 88)
+  }
+  const clearEdge = () => {
+    root.classList.remove('edge-left', 'edge-right')
+  }
+
+  /** 拖着不放又不动：三秒后开始扭 */
+  let dragIdleTimer = 0
+  /** fresh=true 表示这是人动了手才重排的，扭动该停；续问时不能清，否则刚扭就被抹掉 */
+  const armDragIdle = (fresh = true) => {
+    if (dragIdleTimer !== 0) window.clearTimeout(dragIdleTimer)
+    if (fresh) pet.classList.remove('impatient')
+    dragIdleTimer = window.setTimeout(() => {
+      if (!dragging) return
+      pet.classList.add('impatient')
+      showDialog(pick(strings.feedback.dragIdle))
+      // 还不放手就继续问，但别太密
+      armDragIdle(false)
+    }, DRAG_IDLE_MS)
+  }
+  const disarmDragIdle = () => {
+    if (dragIdleTimer !== 0) {
+      window.clearTimeout(dragIdleTimer)
+      dragIdleTimer = 0
+    }
+    pet.classList.remove('impatient')
+  }
+
   let lastDripTime = 0
   const onPetPointerMove = (e: PointerEvent) => {
     if (dragStart === null) return
@@ -1394,6 +1471,7 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       suppressClick = true
       root.classList.add('dragging')
       window.clearTimeout(longPressTimer)
+      armDragIdle()
     }
     if (dragging) {
       const p = clampPos(dragStart.ox + dx, dragStart.oy + dy)
@@ -1401,6 +1479,9 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       root.style.top = `${p.y}px`
 
       trackShake(e.clientX)
+      updateEdge(p.x, p.y)
+      // 动了就说明人还在，重新开始数
+      armDragIdle()
 
       const now = performance.now()
       if (now - lastDripTime > 380) {
@@ -1413,6 +1494,8 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     if (dragStart === null) return
     dragStart = null
     resetShake()
+    disarmDragIdle()
+    clearEdge()
     if (dragging) {
       dragging = false
       root.classList.remove('dragging')
@@ -1537,7 +1620,12 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       triggerDizzy()
     }
   })
-  pet.addEventListener('dblclick', triggerRoll)
+  // 双击按关系深浅分流：翻肚皮是"完全放松"的姿势，
+  // 只有处到形影不离才给你看，平时还是翻个跟头
+  pet.addEventListener('dblclick', () => {
+    if (currentTier() >= BOND_THRESHOLDS.length - 1) triggerBellyUp()
+    else triggerRoll()
+  })
   pet.addEventListener('contextmenu', (e) => {
     e.preventDefault()
     // 右键也不许避让抢跑
@@ -1670,6 +1758,7 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     window.clearTimeout(sleepTimer)
     if (sedentaryTimer !== 0) window.clearInterval(sedentaryTimer)
     window.clearInterval(chatterTimer)
+    if (dragIdleTimer !== 0) window.clearTimeout(dragIdleTimer)
     restoreTitle()
     if (pokeDecayTimer !== 0) window.clearTimeout(pokeDecayTimer)
     if (sulkTimer !== 0) window.clearTimeout(sulkTimer)

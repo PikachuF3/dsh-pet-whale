@@ -270,6 +270,31 @@ export const WHALE_CSS = `
   animation: pw-dizzyWobble 0.7s ease-in-out 2 !important;
 }
 
+/* 翻肚皮：双击的专属反应 */
+[data-dsh-whale] .pet-official.belly-up {
+  animation: pw-bellyUp 2s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
+}
+[data-dsh-whale] .pet-official.belly-up .eye-group .eye,
+[data-dsh-whale] .pet-official.belly-up .eye-group .pupil-highlight { opacity: 0 !important; }
+/* 借用弯月眼——翻着肚皮眯眼笑正是它该有的样子 */
+[data-dsh-whale] .pet-official.belly-up .eye-group .sleep-eyes { display: inline !important; }
+
+/* 贴边挤扁：横向压扁，方向由贴的是哪边决定 */
+/* 后两条是为了压过拖拽态的 animation:none——特异性相同则后定义者胜，
+   而那条规则写在本段之后，只靠前两条会被它盖掉 */
+[data-dsh-whale].edge-left .pet-official .body,
+[data-dsh-whale].edge-right .pet-official .body,
+[data-dsh-whale].dragging.edge-left .pet-official .body,
+[data-dsh-whale].dragging.edge-right .pet-official .body {
+  transform-origin: 50% 50%;
+  animation: pw-squeeze 0.35s ease-out forwards !important;
+}
+
+/* 拖着不放又不动：晃着腰表示不耐烦 */
+[data-dsh-whale].dragging .pet-official.impatient .body {
+  animation: pw-impatientSway 0.9s ease-in-out infinite !important;
+}
+
 /* 连戳中段：不耐烦，侧身躲一下 */
 [data-dsh-whale] .pet-official.annoyed {
   animation: pw-annoyedDodge 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
@@ -745,6 +770,25 @@ export const WHALE_CSS = `
   0%, 100% { transform: rotate(0deg) scale(1); }
   25%      { transform: rotate(-7deg) scale(0.96); }
   75%      { transform: rotate(7deg) scale(0.96); }
+}
+
+@keyframes pw-bellyUp {
+  0%   { transform: rotate(0deg) translateY(0); }
+  20%  { transform: rotate(160deg) translateY(-18px); }
+  35%  { transform: rotate(180deg) translateY(-6px); }
+  75%  { transform: rotate(180deg) translateY(-6px); }
+  100% { transform: rotate(360deg) translateY(0); }
+}
+
+@keyframes pw-squeeze {
+  0%   { transform: scaleX(1) scaleY(1); }
+  100% { transform: scaleX(0.82) scaleY(1.1); }
+}
+
+@keyframes pw-impatientSway {
+  0%, 100% { transform: rotate(0deg); }
+  30%      { transform: rotate(-5deg); }
+  70%      { transform: rotate(5deg); }
 }
 
 @keyframes pw-joyHop {
