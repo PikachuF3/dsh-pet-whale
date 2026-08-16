@@ -196,6 +196,11 @@ export class WhaleSwimmer {
   private startSwimSession(): void {
     this.stop()
 
+    // 游动期间由本循环逐帧写 left/top，容器上绝不能留着 transition：
+    // 留着的话每帧写入都会被补间拦截，鲸鱼钉在原地，而水花水纹按算出来的
+    // 逻辑坐标照常发射，看上去就是"鲸鱼没动，屏幕别处冒水纹"。
+    this.ctx.root.style.transition = ''
+
     const curX = parseFloat(this.ctx.root.style.left) || 0
     const curY = parseFloat(this.ctx.root.style.top) || 0
     this.startPos = { x: curX, y: curY }

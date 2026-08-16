@@ -205,6 +205,8 @@ export function apply(ctx: Context): () => void {
       document.hidden ||
       menu.classList.contains('open') ||
       sleeping ||
+      // 待机微游动的补间还没走完，此时启动游泳会两套动画抢同一个 left
+      Date.now() < microSwimUntil ||
       visualState !== 'idle',
   })
 
@@ -1037,6 +1039,9 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     popBubble()
     window.setTimeout(popBubble, 260)
   }
+  /** microSwim 的补间时长，也是"坐标不可信"的窗口 */
+  const MICRO_SWIM_MS = 1450
+  let microSwimUntil = 0
   const microSwim = (quiet = false) => {
     const ox = parseFloat(root.style.left) || 0
     const oy = parseFloat(root.style.top) || 0
@@ -1044,10 +1049,13 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     root.style.transition = 'left 1.4s ease-in-out, top 1.4s ease-in-out'
     root.style.left = `${target.x}px`
     root.style.top = `${target.y}px`
+    // 补间期间 style.left 已是终点、鲸鱼还在半路，这段时间内谁读坐标都会读偏
+    microSwimUntil = Date.now() + MICRO_SWIM_MS
     window.setTimeout(() => {
       root.style.transition = ''
+      microSwimUntil = 0
       savePos()
-    }, 1450)
+    }, MICRO_SWIM_MS)
     if (!quiet && Math.random() < 0.35) showDialog(pick(strings.feedback.swim))
   }
   const scheduleIdleMicro = () => {
