@@ -211,6 +211,11 @@ check('更多菜单有陪伴记录分类', statsBtn !== undefined)
 statsBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
 const statsItems = [...(menu?.querySelectorAll('.pw-stats-item') ?? [])]
 check('陪伴记录展示项存在', statsItems.length >= 4)
+const bondItem = statsItems.find((el) => el.textContent.includes('关系'))
+check('陪伴记录含关系档位', bondItem !== undefined)
+// 刚挂载没多少互动，分数只够初识档
+check('新装是初识档', bondItem?.textContent.includes('初识') === true)
+check('初识档显示下一档进度', /下一档 \d+%/.test(bondItem?.textContent ?? ''))
 
 // 返回更多菜单并进外观
 const backBtn = [...(menu?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('返回'))
@@ -274,8 +279,29 @@ pageHidden = false
 window.document.dispatchEvent(new window.Event('visibilitychange'))
 check('回到前台 → 标题还原', window.document.title === originalTitle)
 
-// dispose
+// 熟悉度：直接把存档写成高分，重挂一次看是否进到满档
 dispose()
+window.localStorage.setItem(
+  'pet-whale:stats',
+  JSON.stringify({ completedRounds: 100, errorCount: 0, interactionCount: 300, firstDate: '2020-01-01', bondTier: 0 }),
+)
+const dispose2 = exports_.apply(ctx)
+const rootEl2 = window.document.querySelector('[data-dsh-whale]')
+const pet2 = rootEl2?.querySelector('.pet-official')
+const menu2 = rootEl2?.querySelector('.dsh-whale-menu')
+pet2?.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
+;[...(menu2?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('更多设置'))
+  ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+;[...(menu2?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('陪伴记录'))
+  ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+const bondItem2 = [...(menu2?.querySelectorAll('.pw-stats-item') ?? [])].find((el) => el.textContent.includes('关系'))
+check('高分存档 → 形影不离档', bondItem2?.textContent.includes('形影不离') === true)
+check('满档不显示进度', bondItem2?.textContent.includes('满') === true)
+// 升档要落盘，不然每次进来都恭喜一遍
+check('升档已写回存档', JSON.parse(window.localStorage.getItem('pet-whale:stats')).bondTier === 2)
+dispose2()
+
+// dispose
 check('dispose 移除容器', window.document.querySelector('[data-dsh-whale]') === null)
 check('dispose 移除样式', window.document.getElementById('pet-whale-style') === null)
 

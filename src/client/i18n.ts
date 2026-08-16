@@ -7,7 +7,21 @@ export type PetLocale = 'zh' | 'en'
 
 export interface PetStrings {
   status: Record<WhaleState, string[]>
-  poke: string[]
+  /**
+   * 熟悉度：三档下标 0/1/2 = 初识 / 熟络 / 形影不离。
+   * 分档只换语气，不换语义——同一件事，生的时候说得短，熟了说得黏。
+   */
+  bond: {
+    tierName: [string, string, string]
+    /** 升档时说的话，下标 0 用不到（没人从更低的地方升上来） */
+    levelUp: [string, string, string]
+    /** 分档的戳戳反馈，取代顶层 poke */
+    poke: [string[], string[], string[]]
+    /** 分档的回来问候 */
+    welcome: [string, string, string]
+    /** 只有形影不离档才会主动冒的搭话 */
+    chatter: string[]
+  }
   menu: {
     feed: string
     headpat: string
@@ -26,6 +40,8 @@ export interface PetStrings {
     statsInteractions: (n: number) => string
     statsErrors: (n: number) => string
     statsDays: (n: number) => string
+    /** 关系档位 + 距下一档的进度，满档时 pct 传 -1 */
+    statsBond: (name: string, pct: number) => string
     rest: string
     pretend: string
     thinkTicker: string
@@ -68,7 +84,6 @@ export interface PetStrings {
     swim: string[]
     swimOn: string
     swimOff: string
-    welcome: string
     joy: string[]
     pokeDizzy: string[]
     /** 连戳中段：开始不耐烦 */
@@ -113,12 +128,46 @@ const zh: PetStrings = {
     wait: ['主人，这里需要你确认一下 🙋', '等你拍板呢，我先把进度停在这里~', '需要你看一眼再继续哦 ✋'],
     disappointed: ['呜呜... 刚刚没发挥好，有点小失落 🥺', '失败是成功之母，我再缓缓~', '下次一定会更好的...'],
   },
-  poke: [
-    '咕噜咕噜~ 戳到软软的肚皮啦！',
-    '好痒呀~ 哈哈哈 (≧▽≦)',
-    '鲸鱼活力 +10！继续加油~',
-    '小尾巴拍拍水，心情超棒 ✨',
-  ],
+  bond: {
+    tierName: ['初识', '熟络', '形影不离'],
+    levelUp: [
+      '',
+      '好像... 跟你熟起来了呢 🐋✨',
+      '已经离不开你啦，别丢下我哦 (´∀｀)♡',
+    ],
+    poke: [
+      [
+        '咕噜。',
+        '……（歪着头看你）',
+        '唔，痒。',
+        '（往旁边挪了挪）',
+      ],
+      [
+        '咕噜咕噜~ 戳到软软的肚皮啦！',
+        '好痒呀~ 哈哈哈 (≧▽≦)',
+        '鲸鱼活力 +10！继续加油~',
+        '小尾巴拍拍水，心情超棒 ✨',
+      ],
+      [
+        '又戳我~ 就知道你闲不住 (´∀｀)',
+        '嘿嘿，今天也来找我玩啦 ♡',
+        '再多戳一会儿嘛，我不介意的 🐳',
+        '（主动把肚皮翻过来给你）',
+      ],
+    ],
+    welcome: [
+      '你好，我是这儿的鲸鱼 🐋',
+      '欢迎回来，今天也一起加油吧！🐳✨',
+      '你来啦！我一直在等你 🐳✨',
+    ],
+    chatter: [
+      '欸嘿，我在这儿哦 🐳',
+      '（悄悄看了你一眼）',
+      '今天也一起呢，真好 ✨',
+      '（用尾巴轻轻戳了戳你）',
+      '不打扰你，就是想冒个泡 🫧',
+    ],
+  },
   menu: {
     feed: '🐟 投喂小鱼干',
     headpat: '✨ 摸摸头',
@@ -137,6 +186,7 @@ const zh: PetStrings = {
     statsInteractions: (n) => `💬 亲密互动：${n} 次`,
     statsErrors: (n) => `🛠 遇到异常：${n} 次`,
     statsDays: (n) => `📅 共同陪伴：${n} 天`,
+    statsBond: (name, pct) => (pct < 0 ? `💞 关系：${name}（满）` : `💞 关系：${name}（下一档 ${pct}%）`),
     rest: '休息',
     pretend: '💼 假装工作',
     thinkTicker: '🧠 思考链',
@@ -190,7 +240,6 @@ const zh: PetStrings = {
     ],
     swimOn: '游泳模式已开启，我会自己到处游啦 🐳🌊',
     swimOff: '游泳模式已关闭，我乖乖待命~',
-    welcome: '欢迎回来，今天也一起加油吧！🐳✨',
     joy: [
       '嘻嘻，最喜欢主人啦~ 🥰',
       '好开心！能量充满啦~ ✨',
@@ -257,12 +306,46 @@ const en: PetStrings = {
     wait: ['Hey, I need your confirmation here 🙋', 'Waiting for your call—I will hold right here~', 'Please take a look before I continue ✋'],
     disappointed: ['Aww... that did not go well, feeling a bit down 🥺', 'Failure is the mother of success, give me a moment~', 'I will do better next time...'],
   },
-  poke: [
-    'Glub glub~ You poked my soft belly!',
-    'That tickles~ haha (≧▽≦)',
-    'Whale energy +10! Keep it up~',
-    'Splashing my tail, feeling great ✨',
-  ],
+  bond: {
+    tierName: ['Acquainted', 'Close', 'Inseparable'],
+    levelUp: [
+      '',
+      'I think... we are getting close 🐋✨',
+      'I cannot do without you now. Do not leave me (´∀｀)♡',
+    ],
+    poke: [
+      [
+        'Bloop.',
+        '...(tilts head at you)',
+        'Mm. That tickles.',
+        '(shuffles aside a little)',
+      ],
+      [
+        'Glub glub~ You poked my soft belly!',
+        'That tickles~ haha (≧▽≦)',
+        'Whale energy +10! Keep it up~',
+        'Splashing my tail, feeling great ✨',
+      ],
+      [
+        'Poking me again~ I knew you could not sit still (´∀｀)',
+        'Hehe, you came to play with me today too ♡',
+        'Keep going, I really do not mind 🐳',
+        '(rolls over to offer you the belly)',
+      ],
+    ],
+    welcome: [
+      'Hello. I am the whale who lives here 🐋',
+      'Welcome back! Let us do our best today! 🐳✨',
+      'You are here! I have been waiting 🐳✨',
+    ],
+    chatter: [
+      'Heh, I am right here 🐳',
+      '(sneaks a glance at you)',
+      'Together again today. Nice ✨',
+      '(pokes you gently with the tail)',
+      'Not interrupting, just saying hi 🫧',
+    ],
+  },
   menu: {
     feed: '🐟 Feed fish snack',
     headpat: '✨ Headpat',
@@ -281,6 +364,7 @@ const en: PetStrings = {
     statsInteractions: (n) => `💬 Interactions: ${n}`,
     statsErrors: (n) => `🛠 Errors Encountered: ${n}`,
     statsDays: (n) => `📅 Days Together: ${n} d`,
+    statsBond: (name, pct) => (pct < 0 ? `💞 Bond: ${name} (max)` : `💞 Bond: ${name} (next ${pct}%)`),
     rest: 'Rest',
     pretend: '💼 Pretend to work',
     thinkTicker: '🧠 Think ticker',
@@ -334,7 +418,6 @@ const en: PetStrings = {
     ],
     swimOn: 'Swimming mode on: I will roam around by myself 🐳🌊',
     swimOff: 'Swimming mode off: I will stay put~',
-    welcome: 'Welcome back! Let\'s do our best today! 🐳✨',
     joy: [
       'Hehe, love you the most! 🥰',
       'So happy! Energy fully restored~ ✨',

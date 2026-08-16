@@ -31,6 +31,16 @@ const SEDENTARY_KEY = 'pet-whale:sedentary'
 const SEDENTARY_CHOICES = [0, 45, 60, 90] as const
 /** 久坐计时的心跳间隔 */
 const SEDENTARY_TICK_MS = 60000
+
+/**
+ * 熟悉度门槛：分数越过就进下一档。
+ * 分数 = 互动次数 + 完成回合×2 + 共处天数×4——三个维度都算，
+ * 免得只靠猛戳一天就刷满，"处得久"本身也该有分量。
+ */
+const BOND_THRESHOLDS = [0, 80, 400] as const
+/** 形影不离档才有的主动搭话：检查间隔，与真正开口的概率 */
+const CHATTER_TICK_MS = 45000
+const CHATTER_CHANCE = 0.18
 /** 离开页面超过这么久，视为已经休息过，久坐计时清零 */
 const SEDENTARY_AWAY_RESET_MS = 600000
 const AUTO_HIDE_CHECK_MS = 30000
@@ -228,6 +238,8 @@ export function apply(ctx: Context): () => void {
     errorCount: number
     interactionCount: number
     firstDate: string
+    /** 上次达到的关系档，只用来判断"这次是不是刚升上去" */
+    bondTier: number
   }
   const loadStats = (): CompanionStats => {
     try {
@@ -239,6 +251,7 @@ export function apply(ctx: Context): () => void {
           errorCount: typeof parsed.errorCount === 'number' ? parsed.errorCount : 0,
           interactionCount: typeof parsed.interactionCount === 'number' ? parsed.interactionCount : 0,
           firstDate: typeof parsed.firstDate === 'string' ? parsed.firstDate : new Date().toISOString().slice(0, 10),
+          bondTier: typeof parsed.bondTier === 'number' ? parsed.bondTier : 0,
         }
       }
     } catch {
@@ -249,6 +262,7 @@ export function apply(ctx: Context): () => void {
       errorCount: 0,
       interactionCount: 0,
       firstDate: new Date().toISOString().slice(0, 10),
+      bondTier: 0,
     }
     try {
       localStorage.setItem(STATS_KEY, JSON.stringify(init))
@@ -268,6 +282,7 @@ export function apply(ctx: Context): () => void {
     const s = loadStats()
     s.completedRounds++
     saveStats(s)
+    checkBondUp()
   }
   const recordError = () => {
     const s = loadStats()
@@ -278,6 +293,7 @@ export function apply(ctx: Context): () => void {
     const s = loadStats()
     s.interactionCount++
     saveStats(s)
+    checkBondUp()
   }
   const calcDays = (s: CompanionStats): number => {
     try {
@@ -288,6 +304,34 @@ export function apply(ctx: Context): () => void {
     } catch {
       return 1
     }
+  }
+
+  const bondScore = (s: CompanionStats): number =>
+    s.interactionCount + s.completedRounds * 2 + calcDays(s) * 4
+  const bondTierOf = (score: number): number => {
+    let tier = 0
+    for (let i = 0; i < BOND_THRESHOLDS.length; i++) if (score >= BOND_THRESHOLDS[i]) tier = i
+    return tier
+  }
+  /** 距下一档的百分比；已经满档返回 -1 */
+  const bondProgress = (score: number, tier: number): number => {
+    if (tier >= BOND_THRESHOLDS.length - 1) return -1
+    const from = BOND_THRESHOLDS[tier]
+    const to = BOND_THRESHOLDS[tier + 1]
+    return Math.max(0, Math.min(99, Math.round(((score - from) / (to - from)) * 100)))
+  }
+  const currentTier = (): number => bondTierOf(bondScore(loadStats()))
+  /**
+   * 升档播报。写回存储放在弹话之前——弹话没弹出来也不该让同一档反复恭喜。
+   * 分数只增不减，所以这里不必处理回落。
+   */
+  const checkBondUp = () => {
+    const st = loadStats()
+    const tier = bondTierOf(bondScore(st))
+    if (tier <= st.bondTier) return
+    st.bondTier = tier
+    saveStats(st)
+    window.setTimeout(() => showDialog(strings.bond.levelUp[tier]), 1500)
   }
 
   const setState = (next: WhaleState, changed: boolean) => {
@@ -326,7 +370,7 @@ export function apply(ctx: Context): () => void {
     void pet.offsetWidth
     pet.classList.add('squish')
     window.setTimeout(() => pet.classList.remove('squish'), 450)
-    showDialog(pick(strings.poke))
+    showDialog(pick(strings.bond.poke[currentTier()]))
   }
   const triggerRoll = () => {
     markActive()
@@ -526,7 +570,7 @@ export function apply(ctx: Context): () => void {
     pet.classList.remove('welcome')
     void pet.offsetWidth
     pet.classList.add('welcome')
-    showDialog(strings.feedback.welcome)
+    showDialog(strings.bond.welcome[currentTier()])
     sounds.play('bubble')
     window.setTimeout(() => pet.classList.remove('welcome'), 1200)
   }
@@ -952,6 +996,10 @@ export function apply(ctx: Context): () => void {
           strings.panel.statsInteractions(stats.interactionCount),
           strings.panel.statsErrors(stats.errorCount),
           strings.panel.statsDays(days),
+          strings.panel.statsBond(
+            strings.bond.tierName[bondTierOf(bondScore(stats))],
+            bondProgress(bondScore(stats), bondTierOf(bondScore(stats))),
+          ),
         ]
         for (const it of items) {
           const itEl = document.createElement('div')
@@ -1523,9 +1571,31 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     })
 
 // ===== 清理 =====
+  // ===== 主动搭话：只有形影不离档才会 =====
+  const chatterTick = () => {
+    if (currentTier() < BOND_THRESHOLDS.length - 1) return
+    // 干活、睡着、被藏起来、正开着菜单、在闹脾气——都不是搭话的时候
+    if (
+      visualState !== 'idle' ||
+      document.hidden ||
+      sleeping ||
+      sulking ||
+      root.classList.contains(HIDDEN_CLASS) ||
+      menu.classList.contains('open')
+    ) {
+      return
+    }
+    if (Math.random() > CHATTER_CHANCE) return
+    showDialog(pick(strings.bond.chatter))
+  }
+  const chatterTimer = window.setInterval(chatterTick, CHATTER_TICK_MS)
+  // 挂载时也对一次账：隔了很久再回来，该升的档得当场认出来
+  checkBondUp()
+
   const dispose = () => {
     window.clearTimeout(sleepTimer)
     if (sedentaryTimer !== 0) window.clearInterval(sedentaryTimer)
+    window.clearInterval(chatterTimer)
     restoreTitle()
     if (pokeDecayTimer !== 0) window.clearTimeout(pokeDecayTimer)
     if (sulkTimer !== 0) window.clearTimeout(sulkTimer)
