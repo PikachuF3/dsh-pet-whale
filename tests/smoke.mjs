@@ -279,6 +279,30 @@ pageHidden = false
 window.document.dispatchEvent(new window.Event('visibilitychange'))
 check('回到前台 → 标题还原', window.document.title === originalTitle)
 
+// 甩晕：抓住后左右猛甩，四次掉头就该晕
+// jsdom 没有指针捕获，补个空实现，否则 pointerdown 直接抛错
+pet.setPointerCapture = () => {}
+pet.releasePointerCapture = () => {}
+const ptr = (type, x) =>
+  new window.MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: 300 })
+const dialog = rootEl?.querySelector('.dsh-whale-dialog')
+pet.dispatchEvent(Object.assign(ptr('pointerdown', 300), { pointerId: 1 }))
+// 起手一条腿，然后来回四次，每次都走够行程
+for (const x of [340, 260, 340, 260, 340]) {
+  pet.dispatchEvent(Object.assign(ptr('pointermove', x), { pointerId: 1 }))
+}
+check('猛甩后进入甩晕态', pet?.classList.contains('shaken') === true)
+check('甩晕说了话', /晕|停停停|金星|泡泡/.test(dialog?.textContent ?? ''))
+window.dispatchEvent(Object.assign(ptr('pointerup', 340), { pointerId: 1 }))
+
+// 慢慢来回挪不该被当成甩：行程够但每次都超出时间窗
+pet.classList.remove('shaken')
+pet.dispatchEvent(Object.assign(ptr('pointerdown', 300), { pointerId: 2 }))
+pet.dispatchEvent(Object.assign(ptr('pointermove', 340), { pointerId: 2 }))
+pet.dispatchEvent(Object.assign(ptr('pointermove', 335), { pointerId: 2 }))
+check('小幅晃动不算甩', pet?.classList.contains('shaken') === false)
+window.dispatchEvent(Object.assign(ptr('pointerup', 335), { pointerId: 2 }))
+
 // 熟悉度：直接把存档写成高分，重挂一次看是否进到满档
 dispose()
 window.localStorage.setItem(

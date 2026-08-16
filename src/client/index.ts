@@ -41,6 +41,18 @@ const BOND_THRESHOLDS = [0, 80, 400] as const
 /** 形影不离档才有的主动搭话：检查间隔，与真正开口的概率 */
 const CHATTER_TICK_MS = 45000
 const CHATTER_CHANCE = 0.18
+
+/**
+ * 抓住左右猛甩：靠"方向反转"计数，不看速度。
+ * 一条腿走够 SHAKE_MIN_LEG 才算一次真甩动，免得手抖被当成甩；
+ * 反转要挤在 SHAKE_WINDOW_MS 里，慢慢来回挪不该把它晃晕。
+ */
+const SHAKE_MIN_LEG = 26
+const SHAKE_REVERSALS = 4
+const SHAKE_WINDOW_MS = 1100
+const SHAKEN_MS = 1600
+/** 晕完还要缓一会儿，不然一路甩下去会连环触发 */
+const SHAKE_COOLDOWN_MS = 1400
 /** 离开页面超过这么久，视为已经休息过，久坐计时清零 */
 const SEDENTARY_AWAY_RESET_MS = 600000
 const AUTO_HIDE_CHECK_MS = 30000
@@ -1284,6 +1296,62 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
     }, 9000 + Math.random() * 8000)
   }
 
+  // ===== 甩晕 =====
+  /** 当前这条腿的方向，0 表示还没定下来 */
+  let shakeDir = 0
+  /** 这条腿的起点；同向移动时跟着推进，等于一路记住最远处 */
+  let shakeLegFrom = 0
+  let shakeCount = 0
+  let shakeWindowFrom = 0
+  /** 晕到什么时候为止，也当冷却用 */
+  let shakenUntil = 0
+  const resetShake = () => {
+    shakeDir = 0
+    shakeCount = 0
+  }
+  const triggerShaken = () => {
+    const now = performance.now()
+    if (now < shakenUntil) return
+    shakeCount = 0
+    shakenUntil = now + SHAKEN_MS + SHAKE_COOLDOWN_MS
+    markActive()
+    recordInteraction()
+    pet.classList.remove('shaken', 'dizzy', 'squish', 'joy', 'annoyed')
+    void pet.offsetWidth
+    pet.classList.add('shaken')
+    sounds.play('bubble')
+    showDialog(pick(strings.feedback.shaken))
+    window.setTimeout(() => pet.classList.remove('shaken'), SHAKEN_MS)
+  }
+  const trackShake = (x: number) => {
+    const now = performance.now()
+    const delta = x - shakeLegFrom
+    const dir = Math.sign(delta)
+    if (dir === 0) return
+    if (shakeDir === 0) {
+      // 还没起手：先等它朝某个方向走够距离，那才是第一条腿
+      if (Math.abs(delta) >= SHAKE_MIN_LEG) {
+        shakeDir = dir
+        shakeLegFrom = x
+      }
+      return
+    }
+    if (dir === shakeDir) {
+      shakeLegFrom = x
+      return
+    }
+    // 掉头了，但得从最远处走回来足够多才算一次甩
+    if (Math.abs(delta) < SHAKE_MIN_LEG) return
+    shakeDir = dir
+    shakeLegFrom = x
+    if (now - shakeWindowFrom > SHAKE_WINDOW_MS) {
+      shakeCount = 0
+      shakeWindowFrom = now
+    }
+    shakeCount++
+    if (shakeCount >= SHAKE_REVERSALS) triggerShaken()
+  }
+
   let dragStart: { x: number; y: number; ox: number; oy: number } | null = null
   let longPressTimer: number | undefined
   let longPressTriggered = false
@@ -1300,6 +1368,9 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       ox: parseFloat(root.style.left) || 0,
       oy: parseFloat(root.style.top) || 0,
     }
+    resetShake()
+    shakeLegFrom = e.clientX
+    shakeWindowFrom = performance.now()
     // 严格保持抓取时的朝向，拖拽过程中不发生任何朝向突变
     root.dataset.facing = swimmer.currentFacing
     pet.setPointerCapture(e.pointerId)
@@ -1329,6 +1400,8 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
       root.style.left = `${p.x}px`
       root.style.top = `${p.y}px`
 
+      trackShake(e.clientX)
+
       const now = performance.now()
       if (now - lastDripTime > 380) {
         lastDripTime = now
@@ -1339,6 +1412,7 @@ appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () =>
   const endDrag = () => {
     if (dragStart === null) return
     dragStart = null
+    resetShake()
     if (dragging) {
       dragging = false
       root.classList.remove('dragging')

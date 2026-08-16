@@ -254,6 +254,22 @@ export const WHALE_CSS = `
   animation: pw-dizzyShake 0.35s ease-in-out infinite alternate;
 }
 
+/* 甩晕态：抓着左右猛甩的结果 */
+[data-dsh-whale] .pet-official.shaken .eye-group .eye,
+[data-dsh-whale] .pet-official.shaken .eye-group .pupil-highlight { opacity: 0 !important; }
+/* 正晕着比被抓住更该被看见，所以压过拖拽的眯眼 */
+[data-dsh-whale].dragging .pet-official.shaken .eye-group .caught-eyes { display: none !important; }
+[data-dsh-whale] .pet-official.shaken .eye-group .dizzy-eyes {
+  display: inline !important;
+  transform-origin: 5.55px 5.7px;
+  animation: pw-dizzyShake 0.22s ease-in-out infinite alternate;
+}
+/* 身体只在松手后才摇：还攥在手里的时候它本来也动不了，
+   而且拖拽态给 .pet-official 上了 !important 的 transform，动画压不过 */
+[data-dsh-whale]:not(.dragging) .pet-official.shaken {
+  animation: pw-dizzyWobble 0.7s ease-in-out 2 !important;
+}
+
 /* 连戳中段：不耐烦，侧身躲一下 */
 [data-dsh-whale] .pet-official.annoyed {
   animation: pw-annoyedDodge 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) !important;

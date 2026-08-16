@@ -92,6 +92,8 @@ export interface PetStrings {
     pokeSulk: string[]
     /** 失落时被戳：被安慰 */
     comfort: string[]
+    /** 抓着左右猛甩：甩晕了 */
+    shaken: string[]
     notifyOn: string
     notifyOff: string
     sysNotifyOn: string
@@ -266,6 +268,12 @@ const zh: PetStrings = {
       '呜... 谢谢你还在 (´;ω;`)',
       '被摸了摸头，好像又有力气了 ✨',
       '有你在就没关系啦，再来一次！🐋',
+    ],
+    shaken: [
+      '呜哇——太晕了！别甩啦 @_@',
+      '天旋地转... 我要吐泡泡了 🫧',
+      '停停停！海水都被你搅浑啦 >_<',
+      '眼冒金星... 让我缓缓 (@_@;)',
     ],
     notifyOn: '好耶！你不在的时候我会在标签页上喊你 🔔',
     notifyOff: '不喊你了，安安静静的 🤫',
@@ -444,6 +452,12 @@ const en: PetStrings = {
       'Sniff... thanks for staying (´;ω;`)',
       'That head pat helped. I feel better ✨',
       'With you here it is fine. Let us try again! 🐋',
+    ],
+    shaken: [
+      'Whoaa - too dizzy! Stop shaking me @_@',
+      'The room is spinning... I might blow bubbles 🫧',
+      'Stop stop stop! You stirred up the whole sea >_<',
+      'Seeing stars... give me a second (@_@;)',
     ],
     notifyOn: 'Got it! I will shout from the tab title while you are away 🔔',
     notifyOff: 'Staying quiet now 🤫',
