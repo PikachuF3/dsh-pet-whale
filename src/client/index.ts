@@ -181,6 +181,28 @@ export function apply(ctx: Context): () => void {
   const pos = loadPos()
   root.style.left = `${pos.x}px`
   root.style.top = `${pos.y}px`
+  // FOUC 兜底：即使外部 <style id="pet-whale-style"> 因网络/时序问题未应用，
+  // 也让鲸鱼保持固定定位与正确尺寸，避免渲染成页面底部巨大的无样式图形。
+  // 内联样式优先级高于外部样式表；外部的规则会覆盖这些兜底值，不影响正常外观。
+  root.style.position = 'fixed'
+  root.style.width = 'calc(137px * var(--pw-scale))'
+  root.style.height = 'calc(101px * var(--pw-scale))'
+  root.style.zIndex = '900'
+  root.style.pointerEvents = 'none'
+  root.style.userSelect = 'none'
+  root.style.overflow = 'hidden'
+  // 子元素兜底：SVG 是矢量（viewBox），无样式时默认按块级元素撑大，
+  // 必须同时约束 .pet-official 与 svg 的几何，否则仍会渲染成巨型图形。
+  pet.style.width = 'calc(137px * var(--pw-scale))'
+  pet.style.height = 'calc(101px * var(--pw-scale))'
+  pet.style.position = 'relative'
+  pet.style.pointerEvents = 'auto'
+  const petSvg = pet.querySelector('svg')
+  if (petSvg !== null) {
+    petSvg.style.width = '100%'
+    petSvg.style.height = '100%'
+    petSvg.style.display = 'block'
+  }
   document.body.appendChild(root)
   // 初始皮肤（默认陶土；用户换过后从 localStorage 恢复）
   applyPalette(root, paletteOf(loadPaletteId()))
