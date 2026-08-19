@@ -186,6 +186,23 @@ export function apply(ctx: Context): () => void {
   applyPalette(root, paletteOf(loadPaletteId()))
   root.style.setProperty('--pw-scale', String(scale))
 
+  // 手机模式（与 dsh-mobile-hanui 同一断点 ≤1023px）下完全隐藏鲸鱼，避免遮挡；回到桌面自动恢复。
+  // 只影响 root 的显示，不写入 hidden 状态、不创建 mini 图标，桌面端回来自动出现。
+  try {
+    const mobileMQ = window.matchMedia('(max-width: 1023px)')
+    const applyMobileHide = () => {
+      if (mobileMQ.matches) {
+        root.classList.add('hidden')
+      } else {
+        root.classList.remove('hidden')
+      }
+    }
+    applyMobileHide()
+    mobileMQ.addEventListener('change', applyMobileHide)
+  } catch {
+    // 环境不支持 matchMedia 时忽略
+  }
+
   // ===== 主题联动：跟随 DSH 亮/暗主题 =====
   const readTheme = (): 'light' | 'dark' => {
     const scheme = document.documentElement.style.colorScheme
@@ -994,14 +1011,13 @@ export function apply(ctx: Context): () => void {
             },
           ],
           [
-            sounds.isMuted ? strings.menu.soundOff : strings.menu.soundOn,
+            `${sounds.isMuted ? '🔇' : '🔊'} 音效: ${sounds.isMuted ? '关' : `${sounds.getVolume()}%`}`,
             () => {
-              const next = !sounds.isMuted
-              sounds.setMuted(next)
+              const next = sounds.cycleVolume()
               buildMenu('main')
               menu.classList.add('open')
               positionMenu(lastMenuPos.x, lastMenuPos.y)
-              if (next) sounds.play('bubble')
+              if (next > 0) sounds.play('bubble')
             },
           ],
           [
@@ -1117,13 +1133,12 @@ export function apply(ctx: Context): () => void {
           menu.classList.add('open')
           positionMenu(lastMenuPos.x, lastMenuPos.y)
         })
-appendMenuBtn(`${strings.panel.sound}${sounds.isMuted ? ' ✕' : ' ✓'}`, () => {
-          const next = !sounds.isMuted
-          sounds.setMuted(next)
+appendMenuBtn(`${strings.panel.sound}: ${sounds.isMuted ? '关 ✕' : `${sounds.getVolume()}% ✓`}`, () => {
+          const next = sounds.cycleVolume()
           buildMenu('behavior')
           menu.classList.add('open')
           positionMenu(lastMenuPos.x, lastMenuPos.y)
-          if (next) sounds.play('bubble')
+          if (next > 0) sounds.play('bubble')
         })
         appendMenuBtn(`${strings.panel.notify}${notifyOn ? ' ✓' : ' ✕'}`, () => {
           notifyOn = !notifyOn
