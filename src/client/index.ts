@@ -190,7 +190,6 @@ export function apply(ctx: Context): () => void {
   root.style.zIndex = '900'
   root.style.pointerEvents = 'none'
   root.style.userSelect = 'none'
-  root.style.overflow = 'hidden'
   // 子元素兜底：SVG 是矢量（viewBox），无样式时默认按块级元素撑大，
   // 必须同时约束 .pet-official 与 svg 的几何，否则仍会渲染成巨型图形。
   pet.style.width = 'calc(137px * var(--pw-scale))'
